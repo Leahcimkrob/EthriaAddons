@@ -1,0 +1,11 @@
+name: EthriaAddons
+version: '2.1-SNAPSHOT'
+main: de.ethria.main.Main
+api-version: '1.20'
+authors: [DarkPlugins]
+description: Just some Addons for Ethria
+depend:
+  - Vault
+commands:
+  eventchests:
+  locatebiome:

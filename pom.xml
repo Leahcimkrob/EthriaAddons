@@ -69,6 +69,10 @@
             <id>papermc</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
+        <repository>
+            <id>enginehub</id>
+            <url>https://maven.enginehub.org/repo/</url>
+        </repository>
     </repositories>
 
     <dependencyManagement>
@@ -84,6 +88,12 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.enginehub</groupId>
+            <artifactId>squirrelid</artifactId>
+            <version>0.3.2</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
