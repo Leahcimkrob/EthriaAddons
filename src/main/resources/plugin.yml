@@ -6,6 +6,17 @@ authors: [DarkPlugins]
 description: Just some Addons for Ethria
 depend:
   - Vault
+permissions:
+  system.ethria.eventchestsadmin:
+    description: Berechtigt zur Verwaltung der EventChests
+    default: op
+  system.ethria.locatebiome:
+    description: Berechtigt zur Nutzung von /locatebiome
+    default: true
 commands:
   eventchests:
+    description: Verwaltet und öffnet EventChests
+    permission: system.ethria.eventchestsadmin
   locatebiome:
+    description: Findet das nächste Biom des angegebenen Typs
+    permission: system.ethria.locatebiome
