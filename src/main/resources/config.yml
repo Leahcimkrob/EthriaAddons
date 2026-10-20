@@ -1,0 +1,22 @@
+# Verfügbare Sprachen: de-DE, en-US
+language: de-DE
+
+# Dies ist der Prefix, der vor allen Plugin-Nachrichten angezeigt wird.
+Prefix: '&9&lEthria &8≫ '
+
+# Addons aktivieren oder deaktivieren.
+DragonEgg: true
+LocateBiome: true
+HoloPanel: true
+
+# PlotSquared-Prüfung für den Dragon-Egg-Schneider.
+PlotSquaredCheck: true
+PlotSquaredWorld: world
+
+# Command-Aliasse (Alias -> Befehl/Subbefehl)
+# Unterstützt: ethriaaddon, holopanel, locatebiome.
+# Beispiele: holo: "holopanel", hpcreate: "holopanel create"
+
+command_aliases:
+  holo: "holopanel"
+  hpcreate: "holopanel create"

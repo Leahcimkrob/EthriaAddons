@@ -3,6 +3,7 @@ package de.ethria.Commands;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
+import de.ethria.Language.LanguageManager;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -20,23 +21,22 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static de.ethria.main.Main.Prefix;
 
 public class LocateBiome implements CommandExecutor {
 
-    private String Perm;
     private int LBTimeout;
     private boolean LBEnabled;
     private double LBMoney;
     private final JavaPlugin plugin;
+    private final LanguageManager language;
     private final HashMap<UUID, Long> PlayerTimerLB = new HashMap<UUID, Long>();
 
-    public LocateBiome(JavaPlugin plugin, boolean lbenabled, String perm, double lbmoney, int lbtimeout) {
+    public LocateBiome(JavaPlugin plugin, boolean lbenabled, double lbmoney, int lbtimeout, LanguageManager language) {
         this.plugin = plugin;
         this.LBEnabled = lbenabled;
-        this.Perm = perm;
         this.LBMoney = lbmoney;
         this.LBTimeout = lbtimeout;
+        this.language = language;
     }
 
     @Override
@@ -44,7 +44,7 @@ public class LocateBiome implements CommandExecutor {
         if (sender instanceof Player) {
             if(LBEnabled) {
                 Player player = (Player) sender;
-                if (player.hasPermission(Perm)) {
+                if (player.hasPermission("ethriaaddons.command.locatebiome.use")) {
                     if (args.length == 1) {
 
                         Biome targetBiome;
@@ -52,11 +52,11 @@ public class LocateBiome implements CommandExecutor {
                         try {
                             targetBiome = Biome.valueOf(args[0].toUpperCase());
                         } catch (IllegalArgumentException e) {
-                            player.sendMessage(Prefix + "§cDieses Biome existiert nicht!");
+                            player.sendMessage(language.message("locatebiome.invalid-biome"));
                             return false;
                         }
 
-                        player.sendMessage(Prefix + "§eVerarbeite...");
+                        player.sendMessage(language.message("locatebiome.processing"));
 
                         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                             Location nearestBiome = findNearestBiome(player.getWorld(), player.getLocation(), targetBiome);
@@ -71,43 +71,40 @@ public class LocateBiome implements CommandExecutor {
                                     if (currentBalance >= LBMoney && economy.withdrawPlayer(player, LBMoney).transactionSuccess()) {
                                         Location highestLocation = getHighestNonLiquidBlock(nearestBiome);
 
-                                        player.sendMessage(Prefix + "§eNächstes " + targetBiome.name() + " Biome ist bei:");
+                                        player.sendMessage(language.message("locatebiome.found", "biome", targetBiome.getKey().getKey()));
 
-                        Component message = Component.text(Prefix + "§c"
-                                + highestLocation.getBlockX() + ", "
-                                + highestLocation.getBlockY() + ", "
-                                + highestLocation.getBlockZ())
-                                .hoverEvent(HoverEvent.showText(Component.text("§e§oTeleportieren")))
+                        Component message = language.message("locatebiome.coordinates", "x", String.valueOf(highestLocation.getBlockX()), "y", String.valueOf(highestLocation.getBlockY()), "z", String.valueOf(highestLocation.getBlockZ()))
+                                .hoverEvent(HoverEvent.showText(language.message("locatebiome.teleport-hover")))
                                 .clickEvent(ClickEvent.runCommand("/teleport "
                                         + highestLocation.getBlockX() + " "
                                         + highestLocation.getBlockY() + " "
                                         + highestLocation.getBlockZ()));
 
                         player.sendMessage(message);
-                                        player.sendMessage(Prefix + "§eDir wurden §a" + LBMoney + "€ §eabgezogen.");
+                                        player.sendMessage(language.message("locatebiome.money-charged", "amount", String.valueOf(LBMoney)));
                                         PlayerTimerLB.put(player.getUniqueId(), System.currentTimeMillis());
                                     } else {
-                                        player.sendMessage(Prefix + "§cDazu hast du nicht ausreichend Geld. Du benötigtst §e" + LBMoney + "€");
+                                        player.sendMessage(language.message("locatebiome.not-enough-money", "amount", String.valueOf(LBMoney)));
                                     }
                                 } else {
-                                    player.sendMessage(getRemainingTime(player.getUniqueId()));
+                                    player.sendMessage(language.message("locatebiome.cooldown", "time", getRemainingTime(player.getUniqueId())));
                                 }
                             } else {
-                                player.sendMessage(Prefix + "§cDieses Biome wurde nicht gefunden!");
+                                player.sendMessage(language.message("locatebiome.not-found"));
                             }
                         });
                         return true;
                     } else {
-                        player.sendMessage(Prefix + "§eBenutze: /locatebiome <Biome>");
+                        player.sendMessage(language.message("locatebiome.usage", "label", label));
                     }
                 } else {
-                    player.sendMessage(Prefix + "§cDazu hast du keine Rechte!");
+                    player.sendMessage(language.message("command.no-permission"));
                 }
             } else {
-                sender.sendMessage(Prefix + "§cDieser Befehl ist momentan deaktiviert.");
+                sender.sendMessage(language.message("locatebiome.disabled"));
             }
         } else {
-            sender.sendMessage(Prefix + "§cDu musst ein Spieler sein, um diesen Befehl nutzen zu können");
+            sender.sendMessage(language.message("command.player-only"));
         }
         return false;
     }
@@ -168,6 +165,6 @@ public class LocateBiome implements CommandExecutor {
         long minutes = TimeUnit.MILLISECONDS.toMinutes(timeRemaining) - TimeUnit.HOURS.toMinutes(hours);
         long seconds = TimeUnit.MILLISECONDS.toSeconds(timeRemaining) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeRemaining));
 
-        return String.format(Prefix + "§cDu musst noch §e%dh %dm %ds §cwarten, bevor du den Befehl erneut nutzen kannst.", hours, minutes, seconds);
+        return String.format("%dh %dm %ds", hours, minutes, seconds);
     }
 }

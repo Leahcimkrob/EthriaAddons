@@ -4,7 +4,6 @@ import com.plotsquared.bukkit.util.BukkitUtil;
 import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
 import de.ethria.Commands.Utils.ItemStackUtils;
-import de.ethria.Config.EventChests.DataRS;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
@@ -12,45 +11,25 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.inventory.InventoryAction;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import de.ethria.Commands.EventChests;
 
 import java.util.*;
 
 public class ClickListener implements Listener {
 
-    private String Prefix, DependPlotSquaredWorld, ECPerm;
-    private boolean DependPlotSquard, FDragonEgg, FBarrierBedrock, ECEnabled;
+    private String DependPlotSquaredWorld;
+    private boolean DependPlotSquard, FDragonEgg;
 
     private ArrayList<String> FDragonEggMaterial;
     private ArrayList<String> FDragonEggID;
     private ArrayList<String> FDragonEggName;
     private ArrayList<String> FDragonEggLore;
-    private ArrayList<String> FBarrierBedrockMaterial;
-    private ArrayList<String> FBarrierBedrockID;
-    private ArrayList<String> FBarrierBedrockName;
-    private ArrayList<String> FBarrierBedrockLore;
 
 
     private HashMap<UUID, Long> PlayerHashTime = new HashMap<>();
-    HashMap<UUID, Boolean> EventChestEditMode;
-    HashMap<UUID, String> EventChestEditModeChest;
-    HashMap<UUID, Boolean> EventChestOpen = new HashMap<>();
-    HashMap<UUID, String> EventChestOpenName = new HashMap<>();
-
-    DataRS dataRS = new DataRS();
-
-    public ClickListener(String prefix, boolean dependPlotSquared, String dependPlotSquaredWorlds, boolean fDragonEgg, ArrayList<String> fDragonEggMaterial, ArrayList<String> fDragonEggID, ArrayList<String> fDragonEggName, ArrayList<String> fDragonEggLore, boolean fBarrierBedrock, ArrayList<String> fBarrierBedrockMaterial, ArrayList<String> fBarrierBedrockID, ArrayList<String> fBarrierBedrockName, ArrayList<String> fBarrierBedrockLore, HashMap<UUID, Boolean> eventchesteditmode, HashMap<UUID, String> eventchesteditmodechest, boolean ecenabled, String ecperm) {
-        this.Prefix = prefix;
+    public ClickListener(boolean dependPlotSquared, String dependPlotSquaredWorlds, boolean fDragonEgg, ArrayList<String> fDragonEggMaterial, ArrayList<String> fDragonEggID, ArrayList<String> fDragonEggName, ArrayList<String> fDragonEggLore) {
         this.DependPlotSquard = dependPlotSquared;
         this.DependPlotSquaredWorld = dependPlotSquaredWorlds;
 
@@ -60,42 +39,6 @@ public class ClickListener implements Listener {
         this.FDragonEggID = fDragonEggID;
         this.FDragonEggName = fDragonEggName;
         this.FDragonEggLore = fDragonEggLore;
-        // FBarrierBedrock
-        this.FBarrierBedrock = fBarrierBedrock;
-        this.FBarrierBedrockMaterial = fBarrierBedrockMaterial;
-        this.FBarrierBedrockID = fBarrierBedrockID;
-        this.FBarrierBedrockName = fBarrierBedrockName;
-        this.FBarrierBedrockLore = fBarrierBedrockLore;
-
-        this.EventChestEditMode = eventchesteditmode;
-        this.EventChestEditModeChest = eventchesteditmodechest;
-
-        this.ECEnabled = ecenabled;
-        this.ECPerm = ecperm;
-    }
-
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = (Player) event.getPlayer();
-        if(EventChestOpen.getOrDefault(player.getUniqueId(), false)) {
-            EventChestOpen.put(player.getUniqueId(), false);
-            EventChestOpenName.put(player.getUniqueId(), "null");
-        }
-    }
-
-    @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
-        Player player = (Player) event.getPlayer();
-        String chestName = ChatColor.translateAlternateColorCodes('&', EventChestEditModeChest.getOrDefault(player.getUniqueId(), "none"));
-        if (event.getView().getTitle().equals(chestName)) {
-            if (EventChestEditMode.getOrDefault(player.getUniqueId(), false)) {
-                EventChestEditMode.put(player.getUniqueId(), false);
-            }
-        }
-        if(EventChestOpen.getOrDefault(player.getUniqueId(), false)) {
-            EventChestOpen.put(player.getUniqueId(), false);
-            EventChestOpenName.put(player.getUniqueId(), "null");
-        }
     }
 
     @EventHandler
@@ -159,18 +102,4 @@ public class ClickListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        // Logik für das Klicken in Inventaren
-    }
-
-    @EventHandler
-    public void onBlockPlace(BlockPlaceEvent event) {
-        // Logik für das Platzieren von Blöcken
-    }
-
-    @EventHandler
-    public void onBlockDestroy(BlockBreakEvent event) {
-        // Logik für das Zerstören von Blöcken
-    }
 }

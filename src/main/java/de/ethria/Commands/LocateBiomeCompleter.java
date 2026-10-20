@@ -11,19 +11,16 @@ import java.util.Locale;
 
 public class LocateBiomeCompleter implements TabCompleter {
 
-    private String Perms;
-
-    public LocateBiomeCompleter(String perms) {
-        this.Perms = perms;
+    public LocateBiomeCompleter() {
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1 && sender.hasPermission(Perms)) {
+        if (args.length == 1 && sender.hasPermission("ethriaaddons.command.locatebiome.use")) {
             String prefix = args[0].toLowerCase(Locale.ROOT);
             List<String> biomes = new ArrayList<>();
             for (Biome biome : Biome.values()) {
-                String name = biome.name().toLowerCase(Locale.ROOT);
+                String name = biome.getKey().getKey().toLowerCase(Locale.ROOT);
                 if (name.startsWith(prefix)) {
                     biomes.add(name);
                 }

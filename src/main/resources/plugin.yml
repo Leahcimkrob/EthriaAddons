@@ -6,23 +6,75 @@ authors: [DarkPlugins]
 description: Just some Addons for Ethria
 depend:
   - Vault
+softdepend:
+  - CMI
+  - DecentHolograms
+  - HeadDatabase
+libraries:
+  - com.mysql:mysql-connector-j:9.7.0
 permissions:
-  system.ethria.eventchestsadmin:
-    description: Berechtigt zur Verwaltung der EventChests
+  ethriaaddons.admin:
+    description: Zugriff auf alle EthriaAddons-Befehle einschließlich Reload
     default: op
-  system.ethria.locatebiome:
-    description: Berechtigt zur Nutzung von /locatebiome
-    default: true
-  system.ethria.holopanel:
-    description: Berechtigt zur Nutzung von /holopanel
-    default: op
+    children:
+      ethriaaddons.command.*: true
+  ethriaaddons.command.*:
+    description: Zugriff auf alle EthriaAddons-Befehle und Unterbefehle
+    default: false
+    children:
+      ethriaaddons.command.ethriaaddon.*: true
+      ethriaaddons.command.locatebiome.*: true
+      ethriaaddons.command.holopanel.*: true
+  ethriaaddons.command.ethriaaddon.*:
+    default: false
+    children:
+      ethriaaddons.command.ethriaaddon.reload: true
+  ethriaaddons.command.ethriaaddon.reload:
+    description: Darf Konfiguration und Sprache neu laden
+    default: false
+
+  ethriaaddons.command.locatebiome.*:
+    default: false
+    children:
+      ethriaaddons.command.locatebiome.use: true
+
+  ethriaaddons.command.locatebiome.use:
+    description: Darf /locatebiome nutzen
+    default: false
+
+  ethriaaddons.command.holopanel.*:
+    default: false
+    children:
+      ethriaaddons.command.holopanel.create: true
+      ethriaaddons.command.holopanel.editor: true
+      ethriaaddons.command.holopanel.reload: true
+      ethriaaddons.command.holopanel.set: true
+      ethriaaddons.command.holopanel.remove: true
+      ethriaaddons.command.holopanel.delete: true
+  ethriaaddons.command.holopanel.create:
+    description: Darf HoloPanels erstellen
+    default: false
+  ethriaaddons.command.holopanel.editor:
+    description: Darf HoloPanels bearbeiten und verwalten
+    default: false
+  ethriaaddons.command.holopanel.reload:
+    description: Lädt die gespeicherten HoloPanels neu
+    default: false
+  ethriaaddons.command.holopanel.set:
+    description: Darf das HoloPanel-Setztool erhalten
+    default: false
+  ethriaaddons.command.holopanel.remove:
+    description: Darf das HoloPanel-Entferntool erhalten
+    default: false
+  ethriaaddons.command.holopanel.delete:
+    description: Darf HoloPanels löschen
+    default: false
+
 commands:
-  eventchests:
-    description: Verwaltet und öffnet EventChests
-    permission: system.ethria.eventchestsadmin
+  ethriaaddon:
+    description: Lädt Konfiguration und Sprachdatei neu
+    usage: /ethriaaddon reload
   locatebiome:
     description: Findet das nächste Biom des angegebenen Typs
-    permission: system.ethria.locatebiome
   holopanel:
-    description: Sendet eine Nachricht im MiniMessage-Format
-    permission: system.ethria.holopanel
+    description: Erstellt und verwaltet HoloPanels

@@ -1,0 +1,17 @@
+database:
+  # Unterstützt: sqlite, mysql
+  type: sqlite
+  sqlite:
+    file: holopanel.db
+  mysql:
+    host: localhost
+    port: 3306
+    database: holopanel
+    username: root
+    password: ""
+    useSSL: true
+
+# Hologram engine: auto, cmi, decentholograms, or textdisplay.
+# auto prefers CMI, then DecentHolograms, and falls back to Paper TextDisplay.
+hologram:
+  engine: auto

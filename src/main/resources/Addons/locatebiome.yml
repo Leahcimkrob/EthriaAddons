@@ -1,0 +1,5 @@
+# Einstellungen für LocateBiome
+Perm: 'ethriaaddons.command.locatebiome.use'
+Money: '125000'
+# Timeout (Zeit in Minuten)
+Timeout: '180'
