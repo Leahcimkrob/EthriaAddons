@@ -1,8 +1,8 @@
 package de.ethria.Commands;
 
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -73,20 +73,17 @@ public class LocateBiome implements CommandExecutor {
 
                                         player.sendMessage(Prefix + "§eNächstes " + targetBiome.name() + " Biome ist bei:");
 
-                                        TextComponent message = new TextComponent(TextComponent.fromLegacyText(Prefix + "§c"
-                                                + highestLocation.getBlockX() + ", "
-                                                + highestLocation.getBlockY() + ", "
-                                                + highestLocation.getBlockZ()));
-                                        HoverEvent hover = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent[]{
-                                                new TextComponent("§e§oTeleportieren")
-                                        });
-                                        message.setHoverEvent(hover);
-                                        message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/teleport "
-                                                + highestLocation.getBlockX() + " "
-                                                + highestLocation.getBlockY() + " "
-                                                + highestLocation.getBlockZ()));
+                        Component message = Component.text(Prefix + "§c"
+                                + highestLocation.getBlockX() + ", "
+                                + highestLocation.getBlockY() + ", "
+                                + highestLocation.getBlockZ())
+                                .hoverEvent(HoverEvent.showText(Component.text("§e§oTeleportieren")))
+                                .clickEvent(ClickEvent.runCommand("/teleport "
+                                        + highestLocation.getBlockX() + " "
+                                        + highestLocation.getBlockY() + " "
+                                        + highestLocation.getBlockZ()));
 
-                                        player.spigot().sendMessage(message);
+                        player.sendMessage(message);
                                         player.sendMessage(Prefix + "§eDir wurden §a" + LBMoney + "€ §eabgezogen.");
                                         PlayerTimerLB.put(player.getUniqueId(), System.currentTimeMillis());
                                     } else {

@@ -4,6 +4,7 @@ import de.ethria.Commands.EventChests;
 import de.ethria.Commands.EventChestsCompleter;
 import de.ethria.Commands.LocateBiome;
 import de.ethria.Commands.LocateBiomeCompleter;
+import de.ethria.Commands.HoloPanel;
 import de.ethria.Config.BarrierBedrock;
 import de.ethria.Config.Config;
 import de.ethria.Config.DragonEgg;
@@ -77,6 +78,7 @@ public final class Main extends JavaPlugin {
         getCommand("eventchests").setTabCompleter(new EventChestsCompleter());
         getCommand("locatebiome").setExecutor(new LocateBiome(this, LBEnabled, LBPerm, LBMoney, LBTimeout));
         getCommand("locatebiome").setTabCompleter(new LocateBiomeCompleter(LBPerm));
+        getCommand("holopanel").setExecutor(new HoloPanel());
         Bukkit.getConsoleSender().sendMessage(Prefix + "§a§lEthriaAddons aktiviert! §2(v" + this.getDescription().getVersion() + ")");
     }
 
