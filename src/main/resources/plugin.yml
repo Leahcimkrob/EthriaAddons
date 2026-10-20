@@ -1,7 +1,7 @@
 name: EthriaAddons
 version: '${project.version}'
 main: de.ethria.main.Main
-api-version: '1.20'
+api-version: '26.2'
 authors: [DarkPlugins]
 description: Just some Addons for Ethria
 depend:
@@ -13,6 +13,9 @@ permissions:
   system.ethria.locatebiome:
     description: Berechtigt zur Nutzung von /locatebiome
     default: true
+  system.ethria.holopanel:
+    description: Berechtigt zur Nutzung von /holopanel
+    default: op
 commands:
   eventchests:
     description: Verwaltet und öffnet EventChests
@@ -20,3 +23,6 @@ commands:
   locatebiome:
     description: Findet das nächste Biom des angegebenen Typs
     permission: system.ethria.locatebiome
+  holopanel:
+    description: Sendet eine Nachricht im MiniMessage-Format
+    permission: system.ethria.holopanel

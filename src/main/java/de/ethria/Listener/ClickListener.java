@@ -107,7 +107,7 @@ public class ClickListener implements Listener {
         PlayerHashTime.put(player.getUniqueId(), System.currentTimeMillis());
         if (FDragonEgg && (event.getAction() == Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null)) {
             if (event.getClickedBlock().getType().equals(Material.DRAGON_EGG)) {
-                ItemStack itemStack = player.getItemInHand();
+                ItemStack itemStack = player.getInventory().getItemInMainHand();
                 ItemMeta itemMeta = itemStack.getItemMeta();
                 if (itemMeta != null && itemMeta.hasCustomModelData() && itemMeta.hasLore()) {
                     for (int i = 0; i <= FDragonEggName.size() - 1; i++) {

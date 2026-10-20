@@ -2,6 +2,7 @@ package de.ethria.Commands;
 
 import de.ethria.Commands.Utils.ItemStackUtils;
 import de.ethria.Config.EventChests.DataRS;
+import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -13,11 +14,11 @@ import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.Registry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,13 +53,13 @@ public class EventChests implements CommandExecutor {
                         if (dataRS.getChestsCount() > 0) {
                             ArrayList<String> chestData = dataRS.getChests();
 
-                            Inventory inventory = Bukkit.createInventory(null, calculateChestSize(chestData.size()), "§9§lEventChests §8| §eListe");
+                            Inventory inventory = Bukkit.createInventory(null, calculateChestSize(chestData.size()), Component.text("§9§lEventChests §8| §eListe"));
                             for (int i = 0; i <= chestData.size() - 1; i++) {
                                 ItemStack barrel = new ItemStack(Material.BARREL);
                                 ItemMeta meta = barrel.getItemMeta();
                                 if (meta != null) {
                                     meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', chestData.get(i)));
-                                    meta.addEnchant(Enchantment.DIG_SPEED, 10, true);
+                                    meta.addEnchant(Registry.ENCHANTMENT.get(org.bukkit.NamespacedKey.minecraft("efficiency")), 10, true);
                                     barrel.setItemMeta(meta);
                                 }
                                 inventory.addItem(barrel);
@@ -121,7 +122,7 @@ public class EventChests implements CommandExecutor {
                                 if (dataRS.checkChestEntry(args[1])) {
                                     EventChestEditMode.put(player.getUniqueId(), true);
                                     EventChestEditModeChest.put(player.getUniqueId(), args[1]);
-                                    Inventory inventory = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', args[1]));
+                                    Inventory inventory = Bukkit.createInventory(null, 27, Component.text(ChatColor.translateAlternateColorCodes('&', args[1])));
                                     String[][] itemsArray = dataRS.readItems(EventChestEditModeChest.get(player.getUniqueId()));
                                     for (String[] itemInfo : itemsArray) {
                                         int slot = Integer.parseInt(itemInfo[0]); // Slot number
@@ -157,7 +158,7 @@ public class EventChests implements CommandExecutor {
                                             List<String> lore = new ArrayList<>();
                                             lore.add("§9§lDies ist ein EventChest-Item");
                                             barrelMeta.setLore(lore);
-                                            barrelMeta.addEnchant(Enchantment.DIG_SPEED, 10, true);
+                                            barrelMeta.addEnchant(Registry.ENCHANTMENT.get(org.bukkit.NamespacedKey.minecraft("efficiency")), 10, true);
                                             barrel.setItemMeta(barrelMeta);
                                             player.getInventory().addItem(barrel);
 
