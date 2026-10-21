@@ -2,7 +2,7 @@ name: EthriaAddons
 version: '${project.version}'
 main: de.ethria.main.Main
 api-version: '26.2'
-authors: [DarkPlugins]
+authors: [DarkPlugins, Leahcimkrob]
 description: Just some Addons for Ethria
 depend:
   - Vault
