@@ -25,6 +25,7 @@ permissions:
       ethriaaddons.command.ethriaaddon.*: true
       ethriaaddons.command.locatebiome.*: true
       ethriaaddons.command.holopanel.*: true
+      ethriaaddons.command.dragoneggcutter.*: true
   ethriaaddons.command.ethriaaddon.*:
     default: false
     children:
@@ -70,6 +71,14 @@ permissions:
     description: Darf HoloPanels löschen
     default: false
 
+  ethriaaddons.command.dragoneggcutter.*:
+    default: false
+    children:
+      ethriaaddons.command.dragoneggcutter.give: true
+  ethriaaddons.command.dragoneggcutter.give:
+    description: Darf Dragon-Egg-Schneider ausgeben
+    default: false
+
 commands:
   ethriaaddon:
     description: Lädt Konfiguration und Sprachdatei neu
@@ -78,3 +87,6 @@ commands:
     description: Findet das nächste Biom des angegebenen Typs
   holopanel:
     description: Erstellt und verwaltet HoloPanels
+  dragoneggcutter:
+    description: Gibt Dragon-Egg-Schneider und konfigurierte Items aus
+    usage: /dragoneggcutter give <Spieler> <Config-Name> [Anzahl]

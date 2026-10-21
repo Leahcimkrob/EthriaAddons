@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 
-public class LocateBiome implements CommandExecutor {
+public final class LocateBiomeCommand implements CommandExecutor {
 
     private int LBTimeout;
     private boolean LBEnabled;
@@ -31,7 +31,7 @@ public class LocateBiome implements CommandExecutor {
     private final LanguageManager language;
     private final HashMap<UUID, Long> PlayerTimerLB = new HashMap<UUID, Long>();
 
-    public LocateBiome(JavaPlugin plugin, boolean lbenabled, double lbmoney, int lbtimeout, LanguageManager language) {
+    public LocateBiomeCommand(JavaPlugin plugin, boolean lbenabled, double lbmoney, int lbtimeout, LanguageManager language) {
         this.plugin = plugin;
         this.LBEnabled = lbenabled;
         this.LBMoney = lbmoney;

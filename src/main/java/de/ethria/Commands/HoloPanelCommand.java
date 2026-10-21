@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Locale;
 
 /** Routes the HoloPanel root command to its dedicated subcommand handlers. */
-public final class HoloPanel implements CommandExecutor, TabCompleter {
+public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
     private final Create createSubCommand;
     private final Editor editor;
     private final Help helpSubCommand;
@@ -30,7 +30,7 @@ public final class HoloPanel implements CommandExecutor, TabCompleter {
     private final DeletePanel deleteSubCommand;
     private final boolean enabled;
 
-    public HoloPanel(Main plugin, DatabaseManager database, LanguageManager language, Editor editor) {
+    public HoloPanelCommand(Main plugin, DatabaseManager database, LanguageManager language, Editor editor) {
         this.createSubCommand = new Create(plugin, database, language);
         this.editor = editor;
         this.helpSubCommand = new Help(language);

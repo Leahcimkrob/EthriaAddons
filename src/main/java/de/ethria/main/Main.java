@@ -1,15 +1,17 @@
 package de.ethria.main;
 
 import de.ethria.Commands.EthriaAddonCommand;
+import de.ethria.Commands.DragonEggCutterCommand;
 import de.ethria.Commands.HoloPanelSubcommands.Editor;
 import de.ethria.HoloPanel.HoloPanelEngine;
-import de.ethria.Commands.LocateBiome;
-import de.ethria.Commands.LocateBiomeCompleter;
-import de.ethria.Commands.HoloPanel;
+import de.ethria.Commands.LocateBiomeCommand;
+import de.ethria.Commands.LocateBiomeTabCompleter;
+import de.ethria.Commands.HoloPanelCommand;
 import de.ethria.Database.DatabaseManager;
 import de.ethria.Language.LanguageManager;
-import de.ethria.Config.DragonEgg;
-import de.ethria.Config.LocateBiomeConf;
+import de.ethria.Config.DragonEggConfig;
+import de.ethria.Config.HoloPanelConfig;
+import de.ethria.Config.LocateBiomeConfig;
 import de.ethria.Listener.ClickListener;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -45,6 +47,7 @@ public final class Main extends JavaPlugin {
     private boolean DependPlotSquared, FDragonEgg, LBEnabled, HoloPanelEnabled;
 
     private ArrayList<String> FDragonEggMaterial = new ArrayList<>();
+    private ArrayList<String> FDragonEggKey = new ArrayList<>();
     private ArrayList<String> FDragonEggID = new ArrayList<>();
     private ArrayList<String> FDragonEggName = new ArrayList<>();
     private ArrayList<String> FDragonEggLore = new ArrayList<>();
@@ -76,20 +79,16 @@ public final class Main extends JavaPlugin {
         DependPlotSquaredWorld = getConfig().getString("PlotSquaredWorld", "world");
 
         // DragonEgg-Settings laden
-        DragonEgg dragonegg = new DragonEgg(this, FDragonEggMaterial, FDragonEggID, FDragonEggName, FDragonEggLore);
-        dragonegg.createConfig();
+        DragonEggConfig dragonegg = new DragonEggConfig(this, FDragonEggMaterial, FDragonEggKey, FDragonEggID, FDragonEggName, FDragonEggLore);
         dragonegg.readConfig();
         // LocateBiome-Settings laden
-        LocateBiomeConf lbc = new LocateBiomeConf(this);
-        LBEnabled = LBEnabled && Boolean.parseBoolean(lbc.ReadYML("Enabled"));
-        LBMoney = Double.parseDouble(lbc.ReadYML("Money"));
-        LBTimeout = Integer.parseInt(lbc.ReadYML("Timeout"));
+        loadLocateBiomeSettings();
 
         DependPlotSquared = DependPlotSquared && checkRequirements();
         getServer().getPluginManager().registerEvents(new ClickListener(DependPlotSquared, DependPlotSquaredWorld, FDragonEgg, FDragonEggMaterial, FDragonEggID, FDragonEggName, FDragonEggLore), this);
-        getCommand("locatebiome").setExecutor(new LocateBiome(this, LBEnabled, LBMoney, LBTimeout, languageManager));
-        getCommand("locatebiome").setTabCompleter(new LocateBiomeCompleter());
-        HoloPanel holoPanelCommand;
+        updateLocateBiomeCommand();
+        getCommand("locatebiome").setTabCompleter(new LocateBiomeTabCompleter());
+        HoloPanelCommand holoPanelCommand;
         if (HoloPanelEnabled) {
             HoloPanelEngine holoPanelEngine = new HoloPanelEngine(this, databaseManager);
             try {
@@ -99,12 +98,16 @@ public final class Main extends JavaPlugin {
             }
             holoPanelEditor = new Editor(this, databaseManager, languageManager, holoPanelEngine);
             getServer().getPluginManager().registerEvents(holoPanelEditor, this);
-            holoPanelCommand = new HoloPanel(this, databaseManager, languageManager, holoPanelEditor);
+            holoPanelCommand = new HoloPanelCommand(this, databaseManager, languageManager, holoPanelEditor);
         } else {
-            holoPanelCommand = new HoloPanel(this, databaseManager, languageManager, null);
+            holoPanelCommand = new HoloPanelCommand(this, databaseManager, languageManager, null);
         }
         getCommand("holopanel").setExecutor(holoPanelCommand);
         getCommand("holopanel").setTabCompleter(holoPanelCommand);
+        DragonEggCutterCommand dragonEggCutterCommand = new DragonEggCutterCommand(
+                FDragonEggKey, FDragonEggMaterial, FDragonEggID, FDragonEggName, FDragonEggLore, languageManager);
+        getCommand("dragoneggcutter").setExecutor(dragonEggCutterCommand);
+        getCommand("dragoneggcutter").setTabCompleter(dragonEggCutterCommand);
         registerCommandAliases();
         Bukkit.getConsoleSender().sendMessage(Prefix + "§a§lEthriaAddons aktiviert! §2(v" + this.getDescription().getVersion() + ")");
     }
@@ -122,8 +125,9 @@ public final class Main extends JavaPlugin {
             getConfig().options().copyDefaults(true);
             saveConfig();
             languageManager.reload();
-            new DragonEgg(this, FDragonEggMaterial, FDragonEggID, FDragonEggName, FDragonEggLore).readConfig();
-            new LocateBiomeConf(this);
+            new DragonEggConfig(this, FDragonEggMaterial, FDragonEggKey, FDragonEggID, FDragonEggName, FDragonEggLore).readConfig();
+            loadLocateBiomeSettings();
+            updateLocateBiomeCommand();
             if (databaseManager != null) databaseManager.reloadConfigDefaults();
             if (holoPanelEditor != null) holoPanelEditor.reloadGuiConfig();
             Prefix = ChatColor.translateAlternateColorCodes('&', getConfig().getString("Prefix", "&9&lEthria &8≫ "));
@@ -133,6 +137,17 @@ public final class Main extends JavaPlugin {
             throw exception;
         }
         registerCommandAliases();
+    }
+
+    private void loadLocateBiomeSettings() {
+        LocateBiomeConfig config = new LocateBiomeConfig(this);
+        LBEnabled = getConfig().getBoolean("LocateBiome", true) && config.isEnabled();
+        LBMoney = config.getMoney();
+        LBTimeout = config.getTimeoutMinutes();
+    }
+
+    private void updateLocateBiomeCommand() {
+        getCommand("locatebiome").setExecutor(new LocateBiomeCommand(this, LBEnabled, LBMoney, LBTimeout, languageManager));
     }
 
     private void registerCommandAliases() {

@@ -1,10 +1,13 @@
 # DragonEgg-Abbau-Item und Custom-Model-Data
 # Einstellungen für das Abbau-Item #
-SHEARS:
+# Lore und Material werden für das Tool benötigt.
+DragonEggCutter:
   NAME: '&f&l&kX &d&lDragon-Egg-Schneider &f&l&kX'
   ID: '1700003'
   Lore: '&5Dragon-Egg-Schneider'
-IRON_NUGGET:
+  MATERIAL: 'SHEARS'
+ScharferZahn:
   NAME: '&f&l&kX &f&lScharfer Zahn &f&l&kX'
   ID: '1700002'
-  Lore: '&5Kann auch Drachen Eier abbauen'
+  Lore: '&5Kann auch Dracheneier abbauen'
+  MATERIAL: 'IRON_NUGGET'

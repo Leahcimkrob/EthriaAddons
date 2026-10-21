@@ -3,6 +3,7 @@ package de.ethria.Commands.HoloPanelSubcommands;
 import de.ethria.Database.DatabaseManager;
 import de.ethria.Database.DatabaseManager.Panel;
 import de.ethria.Database.DatabaseManager.PanelLocation;
+import de.ethria.Config.HoloPanelConfig;
 import de.ethria.Language.LanguageManager;
 import de.ethria.HoloPanel.HoloPanelEngine;
 import io.papermc.paper.registry.data.dialog.ActionButton;
@@ -42,11 +43,6 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +51,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /** HoloPanel overview, detail editor, and location tools. */
@@ -89,98 +84,7 @@ public final class Editor implements Listener {
     }
 
     private YamlConfiguration loadGuiConfig() {
-        File folder = new File(plugin.getDataFolder(), "Addons/HoloPanel");
-        if (!folder.isDirectory() && !folder.mkdirs()) {
-            plugin.getLogger().warning("Could not create HoloPanel GUI config directory: " + folder);
-        }
-        File file = new File(folder, "HolopanelGUi.yml");
-        boolean created = !file.exists();
-        if (created) plugin.saveResource("Addons/HoloPanel/HolopanelGUi.yml", false);
-
-        YamlConfiguration gui = YamlConfiguration.loadConfiguration(file);
-        if (created) migrateLegacyGuiSettings(gui);
-        migrateGuiLayout(gui);
-        try (InputStream input = plugin.getResource("Addons/HoloPanel/HolopanelGUi.yml")) {
-            if (input != null) {
-                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
-                        new InputStreamReader(input, StandardCharsets.UTF_8));
-                gui.setDefaults(defaults);
-                gui.options().copyDefaults(true);
-                gui.save(file);
-            }
-        } catch (IOException exception) {
-            plugin.getLogger().warning("Could not load HoloPanel GUI defaults: " + exception.getMessage());
-        }
-        return gui;
-    }
-
-    private void migrateGuiLayout(YamlConfiguration gui) {
-        boolean migrated = copyGuiValues(gui, "size.rows", "overview.rows");
-        if (gui.getInt("button.back.slot", -1) == 48) {
-            gui.set("button.back.slot", 49);
-            migrated = true;
-        }
-        migrated |= migrateGuiButton(gui, "overview.previous", "button.previous");
-        migrated |= migrateGuiButton(gui, "overview.back", "button.back");
-        migrated |= migrateGuiButton(gui, "overview.close", "button.close");
-        migrated |= migrateGuiButton(gui, "overview.next-page", "button.next-page");
-        migrated |= migrateGuiButton(gui, "overview.next", "button.next-page");
-        for (String button : List.of("item", "edit", "delete", "tools")) {
-            migrated |= migrateGuiButton(gui, "detail." + button, "detail.button." + button);
-        }
-        for (String path : List.of("detail.back", "detail.close", "detail.button.back", "detail.button.close")) {
-            if (gui.contains(path)) {
-                gui.set(path, null);
-                migrated = true;
-            }
-        }
-        if (migrated) plugin.getLogger().info("Migrated HoloPanel GUI settings to the current button layout.");
-    }
-
-    private boolean migrateGuiButton(YamlConfiguration gui, String oldPath, String newPath) {
-        boolean migrated = copyGuiValues(gui, oldPath, newPath);
-        if (migrated) gui.set(oldPath, null);
-        return migrated;
-    }
-
-    private boolean copyGuiValues(YamlConfiguration gui, String oldPath, String newPath) {
-        if (!gui.contains(oldPath)) return false;
-        ConfigurationSection oldSection = gui.getConfigurationSection(oldPath);
-        if (oldSection == null) {
-            if (!gui.contains(newPath)) {
-                gui.set(newPath, gui.get(oldPath));
-            }
-        } else {
-            for (String key : oldSection.getKeys(true)) {
-                String oldValuePath = oldPath + "." + key;
-                if (gui.isConfigurationSection(oldValuePath)) continue;
-                String newValuePath = newPath + "." + key;
-                if (!gui.contains(newValuePath)) gui.set(newValuePath, gui.get(oldValuePath));
-            }
-        }
-        return true;
-    }
-
-    private void migrateLegacyGuiSettings(YamlConfiguration gui) {
-        File legacyFile = new File(plugin.getDataFolder(), "Addons/HoloPanel/holopanel.yml");
-        if (!legacyFile.isFile()) return;
-        YamlConfiguration legacy = YamlConfiguration.loadConfiguration(legacyFile);
-        ConfigurationSection section = legacy.getConfigurationSection("gui");
-        if (section == null) return;
-
-        for (String path : section.getKeys(true)) {
-            String fullPath = "gui." + path;
-            if (legacy.isConfigurationSection(fullPath)) continue;
-            gui.set(path, legacy.get(fullPath));
-        }
-        try {
-            gui.save(new File(plugin.getDataFolder(), "Addons/HoloPanel/HolopanelGUi.yml"));
-            legacy.set("gui", null);
-            legacy.save(legacyFile);
-            plugin.getLogger().info("Migrated HoloPanel GUI settings to HolopanelGUi.yml.");
-        } catch (IOException exception) {
-            plugin.getLogger().warning("Could not migrate legacy HoloPanel GUI settings: " + exception.getMessage());
-        }
+        return new HoloPanelConfig(plugin).loadGuiConfig();
     }
 
     public void openOverview(Player player, int requestedPage) {

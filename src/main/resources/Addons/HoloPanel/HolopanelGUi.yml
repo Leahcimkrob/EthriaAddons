@@ -39,7 +39,7 @@ button:
     fallback-material: ARROW
 
 detail:
-  rows: 6
+  rows: 4
   button:
     item:
       slot: 10
@@ -59,7 +59,7 @@ detail:
 # Detail and item-change use Back in the last row; the overview uses Close.
 # item-slot is zero-based and must be in the rows above the button bar.
 item-change:
-  rows: 6
+  rows: 4
   item-slot: 13
   filler-material: RED_STAINED_GLASS_PANE
 

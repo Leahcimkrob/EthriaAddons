@@ -9,10 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class LocateBiomeCompleter implements TabCompleter {
-
-    public LocateBiomeCompleter() {
-    }
+public final class LocateBiomeTabCompleter implements TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {

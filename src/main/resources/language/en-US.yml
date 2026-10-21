@@ -98,3 +98,11 @@ locatebiome:
   not-found: "<red>This biome could not be found!"
   usage: "<yellow>Usage: /<label> <Biome>"
   disabled: "<red>This command is currently disabled."
+
+dragoneggcutter:
+  usage: "<yellow>Usage: /<label> give <player> <config-name> [amount] or /<label> give player [player] <config-name> [amount]"
+  player-not-found: "<red>Player <yellow><player></yellow> is not online."
+  invalid-amount: "<red>Amount must be a positive number."
+  item-not-found: "<red>No configured Dragon Egg item named <yellow><item></yellow> was found."
+  invalid-item: "<red>Configured item <yellow><item></yellow> is invalid: <detail>. Check MATERIAL and ID in Addons/dragonegg.yml."
+  given: "<green>Gave <amount> x <yellow><item></yellow> to <yellow><player></yellow>."

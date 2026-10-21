@@ -1,12 +1,10 @@
 package de.ethria.Database;
 
-import de.ethria.Config.YamlDefaults;
+import de.ethria.Config.HoloPanelConfig;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -18,12 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class DatabaseManager {
-    private static final String CONFIG_RESOURCE = "Addons/HoloPanel/holopanel.yml";
-    private static final String[] MIGRATED_SETTINGS = {
-            "database.type", "database.sqlite.file", "database.mysql.host", "database.mysql.port",
-            "database.mysql.database", "database.mysql.username", "database.mysql.password", "database.mysql.useSSL"
-    };
-
     private final JavaPlugin plugin;
     private final String type;
     private FileConfiguration config;
@@ -385,36 +377,7 @@ public final class DatabaseManager {
     }
 
     private FileConfiguration loadConfig() {
-        File configFile = new File(plugin.getDataFolder(), CONFIG_RESOURCE);
-        boolean created = !configFile.exists();
-        if (created) {
-            plugin.saveResource(CONFIG_RESOURCE, false);
-        }
-
-        YamlConfiguration databaseConfig = YamlDefaults.loadAndUpdate(plugin, CONFIG_RESOURCE, configFile);
-        FileConfiguration pluginConfig = plugin.getConfig();
-        boolean migratedLegacySettings = false;
-        boolean migrationSaved = true;
-        for (String path : MIGRATED_SETTINGS) {
-            if (pluginConfig.isSet(path) && (created || !databaseConfig.isSet(path))) {
-                databaseConfig.set(path, pluginConfig.get(path));
-                migratedLegacySettings = true;
-            }
-        }
-        if (migratedLegacySettings) {
-            try {
-                databaseConfig.save(configFile);
-            } catch (java.io.IOException exception) {
-                migrationSaved = false;
-                plugin.getLogger().warning("Could not migrate HoloPanel database settings: " + exception.getMessage());
-            }
-        }
-
-        if (migrationSaved && pluginConfig.isConfigurationSection("database")) {
-            pluginConfig.set("database", null);
-            plugin.saveConfig();
-        }
-        return databaseConfig;
+        return new HoloPanelConfig(plugin).loadDatabaseConfig();
     }
 
     private void loadDriver(String className) throws SQLException {
