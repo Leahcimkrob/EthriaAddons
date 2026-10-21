@@ -1,12 +1,8 @@
 package de.ethria.Listener;
 
 import com.plotsquared.bukkit.util.BukkitUtil;
-import com.plotsquared.core.player.PlotPlayer;
 import com.plotsquared.core.plot.Plot;
-import de.ethria.Commands.Utils.ItemStackUtils;
 import org.bukkit.*;
-import org.bukkit.block.Block;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -29,7 +25,9 @@ public class ClickListener implements Listener {
 
 
     private HashMap<UUID, Long> PlayerHashTime = new HashMap<>();
-    public ClickListener(boolean dependPlotSquared, String dependPlotSquaredWorlds, boolean fDragonEgg, ArrayList<String> fDragonEggMaterial, ArrayList<String> fDragonEggID, ArrayList<String> fDragonEggName, ArrayList<String> fDragonEggLore) {
+    public ClickListener(boolean dependPlotSquared, String dependPlotSquaredWorlds, boolean fDragonEgg,
+                         ArrayList<String> fDragonEggMaterial, ArrayList<String> fDragonEggID,
+                         ArrayList<String> fDragonEggName, ArrayList<String> fDragonEggLore) {
         this.DependPlotSquard = dependPlotSquared;
         this.DependPlotSquaredWorld = dependPlotSquaredWorlds;
 
@@ -53,15 +51,7 @@ public class ClickListener implements Listener {
                 ItemStack itemStack = player.getInventory().getItemInMainHand();
                 ItemMeta itemMeta = itemStack.getItemMeta();
                 if (itemMeta != null && itemMeta.hasCustomModelData() && itemMeta.hasLore()) {
-                    for (int i = 0; i <= FDragonEggName.size() - 1; i++) {
-                        FDragonEggName.set(i, ChatColor.translateAlternateColorCodes('&', FDragonEggName.get(i)));
-                        FDragonEggLore.set(i, ChatColor.translateAlternateColorCodes('&', FDragonEggLore.get(i)));
-                    }
-                    String ItemLore = "";
-                    for (int i = 0; i <= itemMeta.getLore().size() - 1; i++) {
-                        ItemLore = ItemLore + itemMeta.getLore().get(i);
-                    }
-                    if (FDragonEggName.contains(itemMeta.getDisplayName()) && FDragonEggID.contains(String.valueOf(itemMeta.getCustomModelData())) && FDragonEggMaterial.contains(itemStack.getType().toString())) {
+                    if (matchesConfiguredTool(itemMeta)) {
                         if (!player.getGameMode().equals(GameMode.CREATIVE)) {
                             if (DependPlotSquard && DependPlotSquaredWorld.equals(player.getLocation().getWorld().getName())) {
                                 Plot plot = BukkitUtil.adapt(player.getLocation()).getPlot();
@@ -88,6 +78,24 @@ public class ClickListener implements Listener {
             }
         }
         // Weitere Logik für andere Interaktionen
+    }
+
+    private boolean matchesConfiguredTool(ItemMeta itemMeta) {
+        List<String> itemLore = itemMeta.getLore();
+        if (itemLore == null) return false;
+        int configCount = Math.min(FDragonEggID.size(), FDragonEggLore.size());
+        for (int i = 0; i < configCount; i++) {
+            try {
+                int configuredId = Integer.parseInt(FDragonEggID.get(i).trim());
+                String configuredLore = ChatColor.translateAlternateColorCodes('&', FDragonEggLore.get(i));
+                if (itemMeta.getCustomModelData() == configuredId && itemLore.contains(configuredLore)) {
+                    return true;
+                }
+            } catch (NumberFormatException ignored) {
+                // Ignore invalid model IDs in the configuration.
+            }
+        }
+        return false;
     }
 
     public void DurabilityEvent(Player player, ItemStack itemStack) {
