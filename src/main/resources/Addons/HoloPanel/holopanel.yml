@@ -13,5 +13,7 @@ database:
 
 # Hologram engine: auto, cmi, decentholograms, or textdisplay.
 # auto prefers CMI, then DecentHolograms, and falls back to Paper TextDisplay.
+# Text alignment is centered by default. Wrap one or more lines in <left>...</left>
+# to align them left. Use <center>...</center> inside a left section to switch back temporarily.
 hologram:
   engine: auto

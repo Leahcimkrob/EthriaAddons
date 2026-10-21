@@ -6,6 +6,7 @@ import de.ethria.Database.DatabaseManager.PanelLocation;
 import de.ethria.Config.HoloPanelConfig;
 import de.ethria.Language.LanguageManager;
 import de.ethria.HoloPanel.HoloPanelEngine;
+import de.ethria.HoloPanel.HoloPanelText;
 import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
 import io.papermc.paper.registry.data.dialog.action.DialogAction;
@@ -318,13 +319,14 @@ public final class Editor implements Listener {
     private void openTextDialog(Player player, Panel panel, int page) {
         String currentHeadline = panel.headline() == null ? "" : panel.headline();
         String currentDescription = panel.description() == null ? "" : panel.description();
+        int descriptionHeight = Math.max(1, Math.min(512, config.getInt("text-editor.description-height", 160)));
         Dialog dialog = Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(language.message("holopanel.text-dialog-title", "name", panel.name()))
                         .inputs(List.of(
                                 DialogInput.text("headline", 300, language.message("holopanel.headline-label"), true,
                                         currentHeadline, 128, null),
                                 DialogInput.text("description", 300, language.message("holopanel.description-label"), true,
-                                        currentDescription, 2048, TextDialogInput.MultilineOptions.create(null, 120))))
+                                        currentDescription, 2048, TextDialogInput.MultilineOptions.create(null, descriptionHeight))))
                         .canCloseWithEscape(true).build())
                 .type(DialogType.confirmation(
                         ActionButton.create(language.message("holopanel.text-save"), null, 150,
@@ -333,7 +335,10 @@ public final class Editor implements Listener {
                                             response.getText("headline"), response.getText("description"));
                                 }, ClickCallback.Options.builder().uses(1).build())),
                         ActionButton.create(language.message("holopanel.text-cancel"), null, 150, null))));
-        player.showDialog(dialog);
+        player.closeInventory();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) player.showDialog(dialog);
+        });
     }
 
     private void savePanelText(Player player, long id, int page, String headline, String description) {
@@ -550,9 +555,7 @@ public final class Editor implements Listener {
     }
 
     private String panelText(Panel panel) {
-        String headline = panel.headline() == null || panel.headline().isBlank() ? panel.name() : panel.headline();
-        return panel.description() == null || panel.description().isBlank()
-                ? headline : headline + "\n\n" + panel.description();
+        return HoloPanelText.fromPanel(panel);
     }
 
     private Placement calculatePlacement(Location first, Location second, Location player) {

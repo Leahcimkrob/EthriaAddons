@@ -24,7 +24,8 @@ import org.joml.Vector3f;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import de.ethria.Database.DatabaseManager.PanelLocation;
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -34,6 +35,7 @@ public final class HoloPanelEngine {
     private final JavaPlugin plugin;
     private final DatabaseManager database;
     private final CmiHologramTopAligner cmiTopAligner;
+    private final Map<Long, Integer> segmentCounts = new HashMap<>();
 
     public HoloPanelEngine(JavaPlugin plugin, DatabaseManager database) {
         this.plugin = plugin;
@@ -44,20 +46,22 @@ public final class HoloPanelEngine {
     public void render(long id, String text, Location location, double widthBlocks, double heightBlocks) {
         remove(id);
         Engine engine = resolveEngine();
-        List<String> lines = Arrays.stream(text.split("\\n", -1)).toList();
+        List<HoloPanelText.Segment> segments = HoloPanelText.parse(text);
+        List<String> lines = segments.stream().flatMap(segment -> segment.lines().stream()).toList();
         int maximumLineWidth = measureMaximumLineWidth(lines);
         float scale = calculateScale(widthBlocks, heightBlocks, maximumLineWidth, lines.size());
+        segmentCounts.put(id, segments.size());
         try {
             switch (engine) {
-                case CMI -> renderCmi(id, lines, location, scale, maximumLineWidth);
-                case DECENT_HOLOGRAMS -> renderDecent(id, lines, location, scale, maximumLineWidth);
-                case TEXT_DISPLAY -> renderTextDisplay(id, lines, location, scale, maximumLineWidth);
+                case CMI -> renderCmi(id, segments, location, scale, maximumLineWidth);
+                case DECENT_HOLOGRAMS -> renderDecent(id, segments, location, scale, maximumLineWidth);
+                case TEXT_DISPLAY -> renderTextDisplay(id, segments, location, scale, maximumLineWidth);
             }
         } catch (ReflectiveOperationException | LinkageError | RuntimeException exception) {
             plugin.getLogger().log(Level.WARNING, "Could not render HoloPanel " + id + " with " + engine
                     + "; falling back to Paper TextDisplay.", exception);
             removeExternal(id);
-            renderTextDisplay(id, lines, location, scale, maximumLineWidth);
+            renderTextDisplay(id, segments, location, scale, maximumLineWidth);
         }
     }
 
@@ -77,9 +81,7 @@ public final class HoloPanelEngine {
 
     public void restoreAll() throws SQLException {
         for (DatabaseManager.Panel panel : database.getPanels()) {
-            String headline = panel.headline() == null || panel.headline().isBlank() ? panel.name() : panel.headline();
-            String text = panel.description() == null || panel.description().isBlank()
-                    ? headline : headline + "\n" + panel.description();
+            String text = HoloPanelText.fromPanel(panel);
             for (PanelLocation position : panel.locations()) {
                 if (position.server() != null && !position.server().isBlank()
                         && !plugin.getServer().getName().equalsIgnoreCase(position.server())) continue;
@@ -116,68 +118,118 @@ public final class HoloPanelEngine {
         return provider != null && provider.isEnabled();
     }
 
-    private void renderTextDisplay(long id, List<String> lines, Location location, float scale, int lineWidth) {
+    private void renderTextDisplay(long id, List<HoloPanelText.Segment> segments, Location location, float scale, int lineWidth) {
         if (location.getWorld() == null) throw new IllegalArgumentException("HoloPanel location has no loaded world.");
-        Location displayLocation = location.clone().subtract(0, lines.size() * 0.25 * scale, 0);
-        location.getWorld().spawn(displayLocation, TextDisplay.class, entity -> {
-            entity.text(MiniMessage.miniMessage().deserialize(String.join("\n", lines)));
-            entity.setLineWidth(Math.max(1, lineWidth));
-            entity.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
-            entity.setDefaultBackground(false);
-            entity.setBillboard(Display.Billboard.FIXED);
-            entity.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
-                    new Vector3f(scale, scale, scale), new Quaternionf()));
-            entity.setPersistent(true);
-            entity.getPersistentDataContainer().set(Main.HOLOPANEL_ID_KEY, PersistentDataType.LONG, id);
-        });
+        double lineHeight = 0.25 * scale;
+        int totalLines = lineCount(segments);
+        int precedingLines = 0;
+        for (int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++) {
+            HoloPanelText.Segment segment = segments.get(segmentIndex);
+            Location displayLocation = location.clone().subtract(0, (totalLines - precedingLines) * lineHeight, 0);
+            location.getWorld().spawn(displayLocation, TextDisplay.class, entity -> {
+                entity.text(MiniMessage.miniMessage().deserialize(String.join("\n", segment.lines())));
+                entity.setLineWidth(Math.max(1, lineWidth));
+                entity.setAlignment(segment.alignment() == HoloPanelText.Alignment.LEFT
+                        ? TextDisplay.TextAlignment.LEFT : TextDisplay.TextAlignment.CENTER);
+                entity.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
+                entity.setDefaultBackground(false);
+                entity.setBillboard(Display.Billboard.FIXED);
+                entity.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
+                        new Vector3f(scale, scale, scale), new Quaternionf()));
+                entity.setPersistent(true);
+                entity.getPersistentDataContainer().set(Main.HOLOPANEL_ID_KEY, PersistentDataType.LONG, id);
+            });
+            precedingLines += segment.lines().size();
+        }
     }
 
-    private void renderDecent(long id, List<String> lines, Location location, float scale, int maximumLineWidth) throws ReflectiveOperationException {
+    private void renderDecent(long id, List<HoloPanelText.Segment> segments, Location location, float scale, int maximumLineWidth) throws ReflectiveOperationException {
         provider("DecentHolograms");
-        List<String> formattedLines = lines.stream().map(this::asLegacy).toList();
-        Location displayLocation = location.clone().subtract(0, lines.size() * 0.25 * scale, 0);
+        double lineHeight = 0.25 * scale;
+        int totalLines = lineCount(segments);
+        int precedingLines = 0;
+        for (int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++) {
+            HoloPanelText.Segment segment = segments.get(segmentIndex);
+            Location displayLocation = location.clone().subtract(0, (totalLines - precedingLines) * lineHeight, 0);
+            String name = segmentName(id, segmentIndex);
+            invokeDecentRenderer("render", name, displayLocation,
+                    segment.lines().stream().map(this::asLegacy).toList(), scale, scale,
+                    maximumLineWidth, segment.alignment().name());
+            precedingLines += segment.lines().size();
+        }
+    }
+
+    private void renderCmi(long id, List<HoloPanelText.Segment> segments, Location location, float scale, int maximumLineWidth) throws ReflectiveOperationException {
+        Plugin provider = provider("CMI");
+        ClassLoader loader = provider.getClass().getClassLoader();
+        Class<?> cmiClass = Class.forName("com.Zrips.CMI.CMI", true, loader);
+        Object cmi = cmiClass.getMethod("getInstance").invoke(null);
+        Object manager = cmiClass.getMethod("getHologramManager").invoke(cmi);
+        int totalLines = lineCount(segments);
+        int precedingLines = 0;
+        Class<?> hologramClass = Class.forName("com.Zrips.CMI.Modules.Holograms.CMIHologram", true, loader);
+        for (int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++) {
+            HoloPanelText.Segment segment = segments.get(segmentIndex);
+            String name = segmentName(id, segmentIndex);
+            Object hologram = invoke(manager, "getByName", name);
+            if (hologram != null) invoke(hologram, "delete");
+            Constructor<?> constructor = hologramClass.getConstructor(String.class, Location.class);
+            Location segmentTop = location.clone().subtract(0, precedingLines * 0.25 * scale, 0);
+            Location initialLocation = segmentTop.clone().subtract(0, 1, 0);
+            hologram = constructor.newInstance(name, initialLocation);
+            invoke(hologram, "setLocation", initialLocation);
+            Object pages = invoke(hologram, "getPages");
+            invoke(pages, "setLines", segment.lines().stream().map(this::asLegacy).toList());
+            Object textSettings = invoke(hologram, "getTextSettings");
+            Class<?> alignmentClass = Class.forName("com.Zrips.CMI.Modules.Display.CMITextAlignment", true, loader);
+            Object cmiAlignment = java.util.Arrays.stream(alignmentClass.getEnumConstants())
+                    .filter(value -> ((Enum<?>) value).name().equals(segment.alignment().name()))
+                    .findFirst().orElseThrow(() -> new IllegalStateException(
+                            "CMI does not support text alignment " + segment.alignment()));
+            invoke(textSettings, "setTextAlignment", cmiAlignment);
+            invoke(textSettings, "setLineWidth", maximumLineWidth);
+            invoke(textSettings, "setBackgroundAlpha", 0);
+            Object settings = invoke(hologram, "getSettings");
+            invoke(settings, "setSaveToFile", false);
+            Class<?> vectorClass = Class.forName("net.Zrips.CMILib.Container.CMIVector2D", true, loader);
+            Object vector = vectorClass.getConstructor(double.class, double.class).newInstance((double) scale, (double) scale);
+            invoke(settings, "setScale", vector);
+            Class<?> billboardClass = Class.forName("com.Zrips.CMI.Modules.Display.CMIBillboard", true, loader);
+            invoke(settings, "setBillboard", billboardClass.getField("FIXED").get(null));
+            invoke(settings, "setYaw", (double) location.getYaw());
+            invoke(hologram, "show");
+            cmiTopAligner.align(name, hologram, segmentTop, initialLocation, segment.alignment());
+            precedingLines += segment.lines().size();
+        }
+    }
+
+    private int lineCount(List<HoloPanelText.Segment> segments) {
+        return segments.stream().mapToInt(segment -> segment.lines().size()).sum();
+    }
+
+    private String segmentName(long id, int segmentIndex) {
+        return hologramName(id) + "_segment_" + segmentIndex;
+    }
+
+    private Object invokeDecentRenderer(String method, Object... arguments) throws ReflectiveOperationException {
         try {
             Class<?> renderer = Class.forName("de.ethria.HoloPanel.DecentHologramRenderer", true,
                     plugin.getClass().getClassLoader());
-            renderer.getMethod("render", String.class, Location.class, List.class, float.class, float.class, int.class)
-                    .invoke(null, hologramName(id), displayLocation, formattedLines, scale, scale, maximumLineWidth);
+            Class<?>[] parameterTypes = new Class<?>[arguments.length];
+            parameterTypes[0] = String.class;
+            parameterTypes[1] = Location.class;
+            parameterTypes[2] = List.class;
+            parameterTypes[3] = float.class;
+            parameterTypes[4] = float.class;
+            parameterTypes[5] = int.class;
+            parameterTypes[6] = String.class;
+            return renderer.getMethod(method, parameterTypes).invoke(null, arguments);
         } catch (java.lang.reflect.InvocationTargetException exception) {
             Throwable cause = exception.getCause();
             if (cause instanceof ReflectiveOperationException reflective) throw reflective;
             if (cause instanceof RuntimeException runtime) throw runtime;
             throw new IllegalStateException("DecentHolograms display rendering failed.", cause);
         }
-    }
-
-    private void renderCmi(long id, List<String> lines, Location location, float scale, int maximumLineWidth) throws ReflectiveOperationException {
-        Plugin provider = provider("CMI");
-        ClassLoader loader = provider.getClass().getClassLoader();
-        Class<?> cmiClass = Class.forName("com.Zrips.CMI.CMI", true, loader);
-        Object cmi = cmiClass.getMethod("getInstance").invoke(null);
-        Object manager = cmiClass.getMethod("getHologramManager").invoke(cmi);
-        String name = hologramName(id);
-        Object hologram = invoke(manager, "getByName", name);
-        Class<?> hologramClass = Class.forName("com.Zrips.CMI.Modules.Holograms.CMIHologram", true, loader);
-        if (hologram != null) invoke(hologram, "delete");
-        Constructor<?> constructor = hologramClass.getConstructor(String.class, Location.class);
-        Location initialLocation = location.clone().subtract(0, 1, 0);
-        hologram = constructor.newInstance(name, initialLocation);
-        invoke(hologram, "setLocation", initialLocation);
-        Object pages = invoke(hologram, "getPages");
-        invoke(pages, "setLines", lines.stream().map(this::asLegacy).toList());
-        Object textSettings = invoke(hologram, "getTextSettings");
-        invoke(textSettings, "setLineWidth", maximumLineWidth);
-        invoke(textSettings, "setBackgroundAlpha", 0);
-        Object settings = invoke(hologram, "getSettings");
-        invoke(settings, "setSaveToFile", false);
-        Class<?> vectorClass = Class.forName("net.Zrips.CMILib.Container.CMIVector2D", true, loader);
-        Object vector = vectorClass.getConstructor(double.class, double.class).newInstance((double) scale, (double) scale);
-        invoke(settings, "setScale", vector);
-        Class<?> billboardClass = Class.forName("com.Zrips.CMI.Modules.Display.CMIBillboard", true, loader);
-        invoke(settings, "setBillboard", billboardClass.getField("FIXED").get(null));
-        invoke(settings, "setYaw", (double) location.getYaw());
-        invoke(hologram, "show");
-        cmiTopAligner.align(name, hologram, location, initialLocation);
     }
 
     private int measureMaximumLineWidth(List<String> lines) {
@@ -215,12 +267,15 @@ public final class HoloPanelEngine {
 
     private void removeExternal(long id) {
         String name = hologramName(id);
-        cmiTopAligner.remove(name);
+        int segments = segmentCounts.getOrDefault(id, 1);
+        for (int index = 0; index < segments; index++) cmiTopAligner.remove(segmentName(id, index));
         try {
             Plugin decent = Bukkit.getPluginManager().getPlugin("DecentHolograms");
             if (decent != null && decent.isEnabled()) {
                 Class<?> renderer = Class.forName("de.ethria.HoloPanel.DecentHologramRenderer", true,
                         plugin.getClass().getClassLoader());
+                for (int index = 0; index < segments; index++)
+                    renderer.getMethod("remove", String.class).invoke(null, segmentName(id, index));
                 renderer.getMethod("remove", String.class).invoke(null, name);
             }
         } catch (ReflectiveOperationException | LinkageError exception) {
@@ -232,8 +287,12 @@ public final class HoloPanelEngine {
                 ClassLoader loader = cmi.getClass().getClassLoader();
                 Class<?> cmiClass = Class.forName("com.Zrips.CMI.CMI", true, loader);
                 Object manager = cmiClass.getMethod("getHologramManager").invoke(cmiClass.getMethod("getInstance").invoke(null));
-                Object hologram = invoke(manager, "getByName", name);
-                if (hologram != null) invoke(hologram, "delete");
+                for (int index = 0; index < segments; index++) {
+                    Object hologram = invoke(manager, "getByName", segmentName(id, index));
+                    if (hologram != null) invoke(hologram, "delete");
+                }
+                Object legacy = invoke(manager, "getByName", name);
+                if (legacy != null) invoke(legacy, "delete");
             }
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine("Could not remove CMI hologram " + name + ": " + exception.getMessage());

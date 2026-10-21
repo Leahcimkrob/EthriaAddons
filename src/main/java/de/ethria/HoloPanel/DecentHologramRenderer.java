@@ -12,10 +12,13 @@ import eu.decentsoftware.holograms.display.attribute.definition.BillboardAttribu
 import eu.decentsoftware.holograms.display.attribute.definition.ScaleAttributeDefinition;
 import eu.decentsoftware.holograms.display.attribute.definition.TextLineWidthAttributeDefinition;
 import eu.decentsoftware.holograms.display.attribute.definition.TextBackgroundColorAttributeDefinition;
+import eu.decentsoftware.holograms.display.attribute.definition.TextAlignmentAttributeDefinition;
 import eu.decentsoftware.holograms.display.attribute.value.display.BillboardConstraintsValue;
 import eu.decentsoftware.holograms.display.attribute.value.primitives.IntegerValue;
 import eu.decentsoftware.holograms.display.attribute.value.primitives.Vector3fValue;
 import eu.decentsoftware.holograms.display.attribute.value.color.RgbaValue;
+import eu.decentsoftware.holograms.display.attribute.value.display.TextAlignmentValue;
+import eu.decentsoftware.holograms.platform.api.data.display.TextDisplayAlignment;
 import eu.decentsoftware.holograms.platform.api.data.DecentLocation;
 import eu.decentsoftware.holograms.platform.api.data.display.DisplayBillboardConstraints;
 import org.bukkit.Location;
@@ -35,7 +38,7 @@ public final class DecentHologramRenderer {
     }
 
     public static void render(String name, Location location, List<String> lines,
-                              float scaleX, float scaleY, int maxLineWidth) {
+                              float scaleX, float scaleY, int maxLineWidth, String alignment) {
         String displayName = name + "_display";
         remove(name);
         DisplayService service = DecentHologramsAPI.get().getDisplayModule().getDisplayService();
@@ -47,6 +50,9 @@ public final class DecentHologramRenderer {
                 new DisplayAttribute<>(TextLineWidthAttributeDefinition.KEY, new IntegerValue(Math.max(1, maxLineWidth))));
         display.setAttribute(TextBackgroundColorAttributeDefinition.KEY,
                 new DisplayAttribute<>(TextBackgroundColorAttributeDefinition.KEY, new RgbaValue(0, 0, 0, 0)));
+        display.setAttribute(TextAlignmentAttributeDefinition.KEY,
+                new DisplayAttribute<>(TextAlignmentAttributeDefinition.KEY,
+                        new TextAlignmentValue(TextDisplayAlignment.valueOf(alignment))));
         display.setAttribute(BillboardAttributeDefinition.KEY,
                 new DisplayAttribute<>(BillboardAttributeDefinition.KEY,
                         new BillboardConstraintsValue(DisplayBillboardConstraints.FIXED)));

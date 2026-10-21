@@ -70,3 +70,7 @@ filler:
 # Enter this word in chat to cancel HoloPanel tool use and remove the tools.
 tools:
   exit-word: exit
+
+# Height of the multiline description field in the text editor (1-512 pixels).
+text-editor:
+  description-height: 160

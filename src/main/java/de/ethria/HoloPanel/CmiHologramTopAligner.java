@@ -20,13 +20,16 @@ final class CmiHologramTopAligner {
     private static final class Pending {
         final Object hologram;
         final double topY;
+        final HoloPanelText.Alignment alignment;
         Location location;
         CompletableFuture<?> update;
         int corrections;
 
-        Pending(Object hologram, Location location, double topY, CompletableFuture<?> update) {
+        Pending(Object hologram, Location location, double topY, CompletableFuture<?> update,
+                HoloPanelText.Alignment alignment) {
             this.hologram = hologram;
             this.topY = topY;
+            this.alignment = alignment;
             this.location = location.clone();
             this.update = update;
         }
@@ -38,9 +41,10 @@ final class CmiHologramTopAligner {
 
     CmiHologramTopAligner(JavaPlugin plugin) { this.plugin = plugin; }
 
-    void align(String name, Object hologram, Location topLocation, Location initialLocation) throws ReflectiveOperationException {
+    void align(String name, Object hologram, Location topLocation, Location initialLocation,
+               HoloPanelText.Alignment alignment) throws ReflectiveOperationException {
         CompletableFuture<?> update = (CompletableFuture<?>) call(hologram, "requestFullUpdate");
-        pending.put(name, new Pending(hologram, initialLocation, topLocation.getY(), update));
+        pending.put(name, new Pending(hologram, initialLocation, topLocation.getY(), update, alignment));
         if (task == null) task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::alignPending, 1L, 2L);
     }
 
@@ -75,6 +79,8 @@ final class CmiHologramTopAligner {
             if (display == null || !(call(display, "getDisplayEntity") instanceof TextDisplay text)) continue;
             text.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
             text.setDefaultBackground(false);
+            text.setAlignment(pending.alignment == HoloPanelText.Alignment.LEFT
+                    ? TextDisplay.TextAlignment.LEFT : TextDisplay.TextAlignment.CENTER);
             Transformation transformation = (Transformation) call(display, "getTransformation");
             Location origin = (Location) call(display, "getLocation");
             int lines = text.getText().split("\\n", -1).length;
