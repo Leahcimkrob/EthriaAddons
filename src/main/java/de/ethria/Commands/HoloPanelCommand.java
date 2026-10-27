@@ -7,6 +7,7 @@ import de.ethria.Commands.HoloPanelSubcommands.Help;
 import de.ethria.Commands.HoloPanelSubcommands.ReloadHolograms;
 import de.ethria.Commands.HoloPanelSubcommands.RemoveTool;
 import de.ethria.Commands.HoloPanelSubcommands.SetTool;
+import de.ethria.Commands.HoloPanelSubcommands.ServerName;
 import de.ethria.Database.DatabaseManager;
 import de.ethria.Language.LanguageManager;
 import de.ethria.main.Main;
@@ -28,6 +29,7 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
     private final SetTool setToolSubCommand;
     private final RemoveTool removeToolSubCommand;
     private final DeletePanel deleteSubCommand;
+    private final ServerName serverNameSubCommand;
     private final boolean enabled;
 
     public HoloPanelCommand(Main plugin, DatabaseManager database, LanguageManager language, Editor editor) {
@@ -38,6 +40,7 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
         this.setToolSubCommand = new SetTool(editor, language);
         this.removeToolSubCommand = new RemoveTool(editor, language);
         this.deleteSubCommand = new DeletePanel(editor, language);
+        this.serverNameSubCommand = new ServerName(database);
         this.enabled = plugin.getConfig().getBoolean("HoloPanel", true);
     }
 
@@ -56,6 +59,15 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
             case "reload" -> {
                 if (args.length == 1) reloadSubCommand.execute(sender);
                 else helpSubCommand.execute(sender);
+            }
+            case "servername" -> {
+                if (args.length == 1 && sender.hasPermission("ethriaaddons.command.holopanel.servername")) {
+                    serverNameSubCommand.execute(sender);
+                } else if (!sender.hasPermission("ethriaaddons.command.holopanel.servername")) {
+                    sender.sendMessage(createSubCommand.noPermission());
+                } else {
+                    helpSubCommand.execute(sender);
+                }
             }
             case "set", "remove", "delete" -> {
                 if (args.length < 2) {
@@ -101,6 +113,7 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
             List<String> suggestions = new ArrayList<>();
             if ("help".startsWith(prefix)) suggestions.add("help");
             if (sender.hasPermission("ethriaaddons.command.holopanel.reload") && "reload".startsWith(prefix)) suggestions.add("reload");
+            if (sender.hasPermission("ethriaaddons.command.holopanel.servername") && "servername".startsWith(prefix)) suggestions.add("servername");
             if (sender.hasPermission("ethriaaddons.command.holopanel.create") && "create".startsWith(prefix)) suggestions.add("create");
             if (sender.hasPermission("ethriaaddons.command.holopanel.editor") && "editor".startsWith(prefix)) suggestions.add("editor");
             if (sender.hasPermission("ethriaaddons.command.holopanel.set") && "set".startsWith(prefix)) suggestions.add("set");

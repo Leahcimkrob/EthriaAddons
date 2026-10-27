@@ -18,6 +18,7 @@ holopanel:
   help-delete: "<yellow>/holopanel delete <Name> <gray>– delete a panel after chat confirmation"
   help-create: "<yellow>/holopanel create <Name> <gray>– create a panel"
   help-editor: "<yellow>/holopanel editor <gray>– open the panel overview"
+  help-servername: "<yellow>/holopanel servername <gray>– show the LuckPerms server name"
   help-tools: "<gray>Use the editor to manage panels and set or delete positions."
   overview-title: "<dark_blue><bold>HoloPanel <dark_gray>| <yellow>Overview"
   overview-entry: "<gold><name>"

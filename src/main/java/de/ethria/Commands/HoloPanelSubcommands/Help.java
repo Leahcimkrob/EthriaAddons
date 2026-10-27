@@ -9,7 +9,7 @@ import java.util.List;
 public final class Help {
     private static final List<String> KEYS = List.of("holopanel.help-title", "holopanel.help-reload",
             "holopanel.help-set", "holopanel.help-remove", "holopanel.help-delete",
-            "holopanel.help-create", "holopanel.help-editor");
+            "holopanel.help-create", "holopanel.help-editor", "holopanel.help-servername");
     private final LanguageManager language;
 
     public Help(LanguageManager language) { this.language = language; }

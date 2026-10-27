@@ -6,7 +6,7 @@
 
     <groupId>de.ethria</groupId>
     <artifactId>EthriaAddons</artifactId>
-    <version>2.3</version>
+    <version>2.3.1</version>
     <packaging>jar</packaging>
 
     <name>EthriaAddons</name>
@@ -83,6 +83,12 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>net.luckperms</groupId>
+            <artifactId>api</artifactId>
+            <version>5.5</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.enginehub</groupId>
             <artifactId>squirrelid</artifactId>

@@ -84,7 +84,7 @@ public final class HoloPanelEngine {
             String text = HoloPanelText.fromPanel(panel);
             for (PanelLocation position : panel.locations()) {
                 if (position.server() != null && !position.server().isBlank()
-                        && !plugin.getServer().getName().equalsIgnoreCase(position.server())) continue;
+                        && !database.getServerName().equalsIgnoreCase(position.server())) continue;
                 World world = Bukkit.getWorld(position.world());
                 if (world == null) continue;
                 Location location = new Location(world, position.x(), position.y(), position.z(),

@@ -270,7 +270,7 @@ public final class Editor implements Listener {
             return;
         }
         try {
-            long positionId = database.addPanelLocation(id, plugin.getServer().getName(), placement.location().getWorld().getName(),
+            long positionId = database.addPanelLocation(id, database.getServerName(), placement.location().getWorld().getName(),
                     placement.location().getX(), placement.location().getY(), placement.location().getZ(),
                     placement.location().getYaw(), placement.location().getPitch(), placement.widthBlocks(), placement.heightBlocks());
             Panel panel = database.getPanel(id);
@@ -514,7 +514,7 @@ public final class Editor implements Listener {
             for (PanelLocation location : panel.locations()) {
                 if (!clicked.getWorld().getName().equals(location.world())) continue;
                 if (location.server() != null && !location.server().isBlank()
-                        && !plugin.getServer().getName().equalsIgnoreCase(location.server())) continue;
+                        && !database.getServerName().equalsIgnoreCase(location.server())) continue;
                 double dx = x - location.x();
                 double dy = y - location.y();
                 double dz = z - location.z();

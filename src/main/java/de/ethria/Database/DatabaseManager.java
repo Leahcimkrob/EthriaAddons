@@ -3,6 +3,8 @@ package de.ethria.Database;
 import de.ethria.Config.HoloPanelConfig;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Bukkit;
+import net.luckperms.api.LuckPerms;
 
 import java.io.File;
 import java.sql.Connection;
@@ -19,9 +21,11 @@ public final class DatabaseManager {
     private final JavaPlugin plugin;
     private final String type;
     private FileConfiguration config;
+    private final String serverName;
 
     public DatabaseManager(JavaPlugin plugin) throws SQLException {
         this.plugin = plugin;
+        this.serverName = resolveServerName();
         this.config = loadConfig();
         this.type = config.getString("database.type", "sqlite").trim().toLowerCase(Locale.ROOT);
 
@@ -200,6 +204,27 @@ public final class DatabaseManager {
         return config.getString("hologram.engine", "auto").trim().toLowerCase(Locale.ROOT);
     }
 
+    public String getServerName() {
+        return serverName;
+    }
+
+    private String resolveServerName() {
+        LuckPerms luckPerms = Bukkit.getServicesManager().load(LuckPerms.class);
+        if (luckPerms == null) {
+            throw new IllegalArgumentException("LuckPerms API is unavailable; it is required to resolve the database server name.");
+        }
+        String name = luckPerms.getServerName();
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("LuckPerms returned an empty server name.");
+        }
+        if (Bukkit.getServer().getServerConfig().isProxyEnabled() && "global".equalsIgnoreCase(name.trim())) {
+            throw new IllegalArgumentException("LuckPerms uses 'global' on a proxy backend. Set 'server' in plugins/LuckPerms/config.yml to this backend's proxy name.");
+        }
+        String resolved = name.trim();
+        plugin.getLogger().info("Using LuckPerms server identifier for database records: " + resolved);
+        return resolved;
+    }
+
     public void reloadConfigDefaults() {
         config = loadConfig();
     }
@@ -286,7 +311,7 @@ public final class DatabaseManager {
                                  float yaw, float pitch, double widthBlocks, double heightBlocks) throws SQLException {
         String sql = "INSERT INTO holopanel_positions (panel_id, server_name, world, x, y, z, yaw, pitch, width_blocks, height_blocks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection connection = connect(); PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setLong(1, panelId); statement.setString(2, server); statement.setString(3, world);
+            statement.setLong(1, panelId); statement.setString(2, serverName); statement.setString(3, world);
             statement.setDouble(4, x); statement.setDouble(5, y); statement.setDouble(6, z);
             statement.setFloat(7, yaw); statement.setFloat(8, pitch);
             statement.setDouble(9, widthBlocks); statement.setDouble(10, heightBlocks); statement.executeUpdate();
