@@ -15,6 +15,22 @@
 #     fallback-material: ARROW
 overview:
   rows: 6
+  layout:
+    # Each message item has a matching status slot beneath it. Keep both lists aligned by index.
+    message-slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+    status-slots: [9, 10, 11, 12, 13, 14, 15, 16, 17, 27, 28, 29, 30, 31, 32, 33, 34, 35]
+  status:
+    # Status item is shown directly below each message item.
+    material_on: GREEN_DYE
+    material_off: RED_DYE
+
+config:
+  interval-slot: 11
+  view-slot: 15
+  default-text-slot: 13
+  default-text-width: 300
+  default-text-height: 120
+  rows: 4
 
 button:
   previous:
@@ -45,13 +61,8 @@ detail:
       slot: 10
       material: CHEST
     edit:
-      slot: 12
+      slot: 13
       material: CRAFTING_TABLE
-    tools:
-      slot: 14
-      material: LIGHTNING_ROD
-      head-database-id: ''
-      fallback-material: STICK
     delete:
       slot: 16
       fallback-material: BARRIER
@@ -66,7 +77,8 @@ item-change:
 filler:
   type: material
   material: GRAY_STAINED_GLASS_PANE
-
 # Height of the multiline description field in the text editor (1-512 pixels).
 text-editor:
-  description-height: 160
+  name-width: 300
+  message-width: 300
+  message-height: 120

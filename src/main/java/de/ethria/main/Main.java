@@ -7,11 +7,16 @@ import de.ethria.HoloPanel.HoloPanelEngine;
 import de.ethria.Commands.LocateBiomeCommand;
 import de.ethria.Commands.LocateBiomeTabCompleter;
 import de.ethria.Commands.HoloPanelCommand;
+import de.ethria.Commands.AutoMessageCommand;
+import de.ethria.Scheduler.AutoMessageScheduler;
 import de.ethria.Database.DatabaseManager;
 import de.ethria.Language.LanguageManager;
 import de.ethria.Config.DragonEggConfig;
 import de.ethria.Config.HoloPanelConfig;
 import de.ethria.Config.LocateBiomeConfig;
+import de.ethria.Config.YamlDefaults;
+import org.bukkit.configuration.file.YamlConfiguration;
+import java.io.File;
 import de.ethria.Listener.ClickListener;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -39,8 +44,12 @@ public final class Main extends JavaPlugin {
     public static String Prefix;
     public static NamespacedKey HOLOPANEL_ID_KEY;
     private DatabaseManager databaseManager;
+    private AutoMessageScheduler autoMessageScheduler;
     private LanguageManager languageManager;
     private Editor holoPanelEditor;
+    private File autoMessageConfigFile;
+    private File autoMessageGuiConfigFile;
+    private YamlConfiguration autoMessageConfig;
     private int LBTimeout;
     private double LBMoney;
     private String DependPlotSquaredWorld;
@@ -60,6 +69,10 @@ public final class Main extends JavaPlugin {
         HOLOPANEL_ID_KEY = new NamespacedKey(this, "holopanel_id");
         languageManager = new LanguageManager(this);
         languageManager.load();
+        autoMessageConfigFile = new File(getDataFolder(), "Addons/AutoMesssage/automessage.yml");
+        autoMessageConfig = YamlDefaults.loadAndUpdate(this, "Addons/AutoMesssage/automessage.yml", autoMessageConfigFile);
+        autoMessageGuiConfigFile = new File(getDataFolder(), "Addons/AutoMesssage/automessageGUi.yml");
+        YamlDefaults.loadAndUpdate(this, "Addons/AutoMesssage/automessageGUi.yml", autoMessageGuiConfigFile);
         getCommand("ethriaaddon").setExecutor(new EthriaAddonCommand(this, languageManager));
         getCommand("ethriaaddon").setTabCompleter((org.bukkit.command.TabCompleter) getCommand("ethriaaddon").getExecutor());
         try {
@@ -104,6 +117,15 @@ public final class Main extends JavaPlugin {
         }
         getCommand("holopanel").setExecutor(holoPanelCommand);
         getCommand("holopanel").setTabCompleter(holoPanelCommand);
+        AutoMessageCommand autoMessageCommand = new AutoMessageCommand(this, databaseManager, languageManager);
+        getServer().getPluginManager().registerEvents(autoMessageCommand.configGui(), this);
+        getServer().getPluginManager().registerEvents(autoMessageCommand.editor(), this);
+        if (getConfig().getBoolean("AutoMessage", true)) {
+            autoMessageScheduler = new AutoMessageScheduler(this, databaseManager);
+            autoMessageScheduler.start();
+        }
+        getCommand("automessage").setExecutor(autoMessageCommand);
+        getCommand("automessage").setTabCompleter(autoMessageCommand);
         DragonEggCutterCommand dragonEggCutterCommand = new DragonEggCutterCommand(
                 FDragonEggKey, FDragonEggMaterial, FDragonEggID, FDragonEggName, FDragonEggLore, languageManager);
         getCommand("dragoneggcutter").setExecutor(dragonEggCutterCommand);
@@ -114,6 +136,7 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (autoMessageScheduler != null) autoMessageScheduler.stop();
         Bukkit.getConsoleSender().sendMessage(Prefix + "§c§lEthriaAddons deaktiviert! §4(v" + this.getDescription().getVersion() + ")");
     }
 
@@ -138,6 +161,17 @@ public final class Main extends JavaPlugin {
         }
         registerCommandAliases();
     }
+
+    public void reloadAutoMessageConfig() {
+        autoMessageConfig = YamlDefaults.loadAndUpdate(this, "Addons/AutoMesssage/automessage.yml", autoMessageConfigFile);
+        YamlDefaults.loadAndUpdate(this, "Addons/AutoMesssage/automessageGUi.yml", autoMessageGuiConfigFile);
+        if (databaseManager != null) databaseManager.reloadConfigDefaults();
+        if (autoMessageScheduler != null) autoMessageScheduler.restart();
+    }
+
+    public YamlConfiguration autoMessageConfig() { return autoMessageConfig; }
+    public File autoMessageConfigFile() { return autoMessageConfigFile; }
+    public AutoMessageScheduler autoMessageScheduler() { return autoMessageScheduler; }
 
     private void loadLocateBiomeSettings() {
         LocateBiomeConfig config = new LocateBiomeConfig(this);

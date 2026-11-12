@@ -3,6 +3,7 @@ language: de-DE
 
 # Dies ist der Prefix, der vor allen Plugin-Nachrichten angezeigt wird.
 Prefix: '&9&lEthria &8≫ '
+AutomessagePrefix: '<gold>[</gold><dark_aqua>Ethria</dark_aqua><gold> News] </gold>'
 
 # Addons aktivieren oder deaktivieren.
 DragonEgg: true
@@ -17,7 +18,6 @@ PlotSquaredWorld: world
 # Command-Aliasse (Alias -> Befehl/Subbefehl)
 # Unterstützt: ethriaaddon, holopanel, locatebiome.
 # Beispiele: holo: "holopanel", hpcreate: "holopanel create"
-
 command_aliases:
   holo: "holopanel"
   hpcreate: "holopanel create"

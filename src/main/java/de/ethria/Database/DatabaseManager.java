@@ -1,6 +1,8 @@
 package de.ethria.Database;
 
 import de.ethria.Config.HoloPanelConfig;
+import de.ethria.main.Main;
+import de.ethria.Config.YamlDefaults;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
@@ -18,16 +20,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class DatabaseManager {
-    private final JavaPlugin plugin;
+    private final Main plugin;
     private final String type;
+    private final String autoMessageType;
     private FileConfiguration config;
+    private FileConfiguration autoMessageConfig;
     private final String serverName;
 
-    public DatabaseManager(JavaPlugin plugin) throws SQLException {
+    public DatabaseManager(Main plugin) throws SQLException {
         this.plugin = plugin;
         this.serverName = resolveServerName();
         this.config = loadConfig();
         this.type = config.getString("database.type", "sqlite").trim().toLowerCase(Locale.ROOT);
+        this.autoMessageConfig = loadAutoMessageConfig();
+        this.autoMessageType = autoMessageConfig.getString("database.type", "sqlite").trim().toLowerCase(Locale.ROOT);
 
         if ("sqlite".equals(type)) {
             File file = new File(plugin.getDataFolder(), config.getString("database.sqlite.file", "holopanel.db"));
@@ -40,6 +46,18 @@ public final class DatabaseManager {
             loadDriver("com.mysql.cj.jdbc.Driver");
         } else {
             throw new IllegalArgumentException("Unsupported database type '" + type + "'. Use sqlite or mysql.");
+        }
+        if ("sqlite".equals(autoMessageType)) {
+            File file = new File(plugin.getDataFolder(), autoMessageConfig.getString("database.sqlite.file", "automessage.db"));
+            File parent = file.getParentFile();
+            if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
+                throw new SQLException("Could not create SQLite database directory: " + parent);
+            }
+            loadDriver("org.sqlite.JDBC");
+        } else if ("mysql".equals(autoMessageType)) {
+            loadDriver("com.mysql.cj.jdbc.Driver");
+        } else {
+            throw new IllegalArgumentException("Unsupported AutoMessage database type '" + autoMessageType + "'. Use sqlite or mysql.");
         }
     }
 
@@ -55,6 +73,17 @@ public final class DatabaseManager {
                 + "description TEXT,"
                 + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                 + ")";
+        String autoMessageIdColumn = "sqlite".equals(autoMessageType)
+                ? "INTEGER PRIMARY KEY AUTOINCREMENT"
+                : "BIGINT PRIMARY KEY AUTO_INCREMENT";
+        String autoMessageSql = "CREATE TABLE IF NOT EXISTS automessages ("
+                + "id " + autoMessageIdColumn + ","
+                + "name VARCHAR(128) NOT NULL UNIQUE,"
+                + "server_name VARCHAR(128) NOT NULL,"
+                + "description TEXT,"
+                + "item_base64 TEXT,"
+                + "active BOOLEAN NOT NULL DEFAULT TRUE"
+                + ")";
         try (Connection connection = connect(); Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql);
             ensureNewFields(connection);
@@ -63,6 +92,11 @@ public final class DatabaseManager {
             migratePositionIdColumn(connection);
             migrateLegacyPositions(connection);
             dropLegacyPositionColumns(connection);
+        }
+        try (Connection connection = connectAutoMessage(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate(autoMessageSql);
+            ensureAutoMessageServerName(connection);
+            ensureAutoMessageActive(connection);
         }
         plugin.getLogger().info("HoloPanel database is ready (" + type + ").");
     }
@@ -227,6 +261,7 @@ public final class DatabaseManager {
 
     public void reloadConfigDefaults() {
         config = loadConfig();
+        autoMessageConfig = loadAutoMessageConfig();
     }
 
     public long createPanelName(String name) throws SQLException {
@@ -239,6 +274,118 @@ public final class DatabaseManager {
                 if (keys.next()) return keys.getLong(1);
             }
             throw new SQLException("Database did not return a generated HoloPanel ID.");
+        }
+    }
+
+    public long createAutoMessage(String name) throws SQLException {
+        String sql = "INSERT INTO automessages (name, server_name, description) VALUES (?, ?, ?)";
+        try (Connection connection = connectAutoMessage();
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, name);
+            statement.setString(2, serverName);
+            List<String> defaultLines = plugin.autoMessageConfig().getStringList("AutomessageDefaultText");
+            statement.setString(3, String.join("\n", defaultLines));
+            statement.executeUpdate();
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) return keys.getLong(1);
+            }
+            throw new SQLException("Database did not return a generated AutoMessage ID.");
+        }
+    }
+
+    public List<String> getAutoMessageNames() throws SQLException {
+        List<String> names = new ArrayList<>();
+        try (Connection connection = connectAutoMessage();
+             PreparedStatement statement = connection.prepareStatement("SELECT name FROM automessages ORDER BY name");
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) names.add(result.getString("name"));
+        }
+        return names;
+    }
+
+    public List<AutoMessage> getAutoMessages() throws SQLException {
+        List<AutoMessage> messages = new ArrayList<>();
+        try (Connection connection = connectAutoMessage();
+             PreparedStatement statement = connection.prepareStatement("SELECT id, name, description, item_base64, server_name, active FROM automessages ORDER BY name");
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) messages.add(new AutoMessage(result.getLong("id"), result.getString("name"), result.getString("description"), result.getString("item_base64"), result.getString("server_name"), result.getBoolean("active")));
+        }
+        return messages;
+    }
+
+    public AutoMessage getAutoMessage(String name) throws SQLException {
+        try (Connection connection = connectAutoMessage();
+             PreparedStatement statement = connection.prepareStatement("SELECT id, name, description, item_base64, server_name, active FROM automessages WHERE name = ?")) {
+            statement.setString(1, name);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? new AutoMessage(result.getLong("id"), result.getString("name"), result.getString("description"), result.getString("item_base64"), result.getString("server_name"), result.getBoolean("active")) : null;
+            }
+        }
+    }
+
+    public void updateAutoMessageName(long id, String name) throws SQLException {
+        try (Connection connection = connectAutoMessage(); PreparedStatement statement = connection.prepareStatement("UPDATE automessages SET name = ? WHERE id = ?")) {
+            statement.setString(1, name);
+            statement.setLong(2, id);
+            statement.executeUpdate();
+        }
+    }
+
+    public void updateAutoMessageText(long id, String text) throws SQLException {
+        try (Connection connection = connectAutoMessage(); PreparedStatement statement = connection.prepareStatement("UPDATE automessages SET description = ? WHERE id = ?")) {
+            statement.setString(1, text);
+            statement.setLong(2, id);
+            statement.executeUpdate();
+        }
+    }
+
+    public void updateAutoMessageItem(long id, String itemBase64) throws SQLException {
+        try (Connection connection = connectAutoMessage(); PreparedStatement statement = connection.prepareStatement("UPDATE automessages SET item_base64 = ? WHERE id = ?")) {
+            statement.setString(1, itemBase64);
+            statement.setLong(2, id);
+            statement.executeUpdate();
+        }
+    }
+
+    public void updateAutoMessageActive(long id, boolean active) throws SQLException {
+        try (Connection connection = connectAutoMessage(); PreparedStatement statement = connection.prepareStatement("UPDATE automessages SET active = ? WHERE id = ?")) {
+            statement.setBoolean(1, active);
+            statement.setLong(2, id);
+            statement.executeUpdate();
+        }
+    }
+
+    public void deleteAutoMessage(long id) throws SQLException {
+        try (Connection connection = connectAutoMessage(); PreparedStatement statement = connection.prepareStatement("DELETE FROM automessages WHERE id = ?")) {
+            statement.setLong(1, id);
+            statement.executeUpdate();
+        }
+    }
+
+    public record AutoMessage(long id, String name, String description, String itemBase64, String serverName, boolean active) { }
+
+    private void ensureAutoMessageServerName(Connection connection) throws SQLException {
+        boolean exists;
+        try (ResultSet columns = connection.getMetaData().getColumns(null, null, "automessages", "server_name")) {
+            exists = columns.next();
+        }
+        if (!exists) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("ALTER TABLE automessages ADD COLUMN server_name VARCHAR(128)");
+                statement.executeUpdate("UPDATE automessages SET server_name = '" + serverName.replace("'", "''") + "' WHERE server_name IS NULL");
+            }
+        }
+    }
+
+    private void ensureAutoMessageActive(Connection connection) throws SQLException {
+        boolean exists;
+        try (ResultSet columns = connection.getMetaData().getColumns(null, null, "automessages", "active")) {
+            exists = columns.next();
+        }
+        if (!exists) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("ALTER TABLE automessages ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE");
+            }
         }
     }
 
@@ -401,8 +548,30 @@ public final class DatabaseManager {
                 config.getString("database.mysql.password", ""));
     }
 
+    private Connection connectAutoMessage() throws SQLException {
+        if ("sqlite".equals(autoMessageType)) {
+            File file = new File(plugin.getDataFolder(), autoMessageConfig.getString("database.sqlite.file", "automessage.db"));
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file.getAbsolutePath());
+            try (Statement statement = connection.createStatement()) { statement.execute("PRAGMA foreign_keys=ON"); }
+            return connection;
+        }
+        String host = autoMessageConfig.getString("database.mysql.host", "localhost");
+        int port = autoMessageConfig.getInt("database.mysql.port", 3306);
+        String schema = autoMessageConfig.getString("database.mysql.database", "automessage");
+        String url = "jdbc:mysql://" + host + ":" + port + "/" + schema
+                + "?useSSL=" + autoMessageConfig.getBoolean("database.mysql.useSSL", true)
+                + "&serverTimezone=UTC";
+        return DriverManager.getConnection(url, autoMessageConfig.getString("database.mysql.username", "root"),
+                autoMessageConfig.getString("database.mysql.password", ""));
+    }
+
     private FileConfiguration loadConfig() {
         return new HoloPanelConfig(plugin).loadDatabaseConfig();
+    }
+
+    private FileConfiguration loadAutoMessageConfig() {
+        File file = new File(plugin.getDataFolder(), "Addons/AutoMesssage/automessage.yml");
+        return YamlDefaults.loadAndUpdate(plugin, "Addons/AutoMesssage/automessage.yml", file);
     }
 
     private void loadDriver(String className) throws SQLException {

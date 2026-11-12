@@ -27,6 +27,37 @@ permissions:
       ethriaaddons.command.locatebiome.*: true
       ethriaaddons.command.holopanel.*: true
       ethriaaddons.command.dragoneggcutter.*: true
+  ethriaaddons.command.automessage.*:
+    default: op
+    children:
+      ethriaaddons.command.automessage.create: true
+      ethriaaddons.command.automessage.editor: true
+      ethriaaddons.command.automessage.view: true
+      ethriaaddons.command.automessage.reload: true
+      ethriaaddons.command.automessage.delete: true
+      ethriaaddons.command.automessage.config: true
+      ethriaaddons.command.automessage.debug: true
+  ethriaaddons.command.automessage.create:
+    description: Darf Automessages erstellen
+    default: op
+  ethriaaddons.command.automessage.editor:
+    description: Darf den Automessage-Editor öffnen
+    default: op
+  ethriaaddons.command.automessage.view:
+    description: Darf Automessages im Chat anzeigen lassen
+    default: op
+  ethriaaddons.command.automessage.reload:
+    description: Darf die Automessage-Konfiguration neu laden
+    default: op
+  ethriaaddons.command.automessage.delete:
+    description: Darf Automessages löschen
+    default: op
+  ethriaaddons.command.automessage.config:
+    description: Darf Automessage-Einstellungen ändern
+    default: op
+  ethriaaddons.command.automessage.debug:
+    description: Darf Automessage-Debuginformationen anzeigen
+    default: op
   ethriaaddons.command.ethriaaddon.*:
     default: false
     children:
@@ -92,6 +123,8 @@ commands:
     description: Findet das nächste Biom des angegebenen Typs
   holopanel:
     description: Erstellt und verwaltet HoloPanels
+  automessage:
+    description: Erstellt und verwaltet Automessages
   dragoneggcutter:
     description: Gibt Dragon-Egg-Schneider und konfigurierte Items aus
     usage: /dragoneggcutter give <Spieler> <Config-Name> [Anzahl]

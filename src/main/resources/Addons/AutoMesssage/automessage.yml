@@ -1,13 +1,26 @@
 database:
-  # Unterstützt: sqlite, mysql
+  # Datenbank für Automessages. Unterstützte Typen: sqlite, mysql.
   type: sqlite
   sqlite:
+    # SQLite-Datei relativ zum Plugin-Datenordner.
     file: automessage.db
   mysql:
+    # MySQL-Verbindungsdaten (nur bei type: mysql verwendet).
     host: localhost
     port: 3306
-    database: holopanel
+    database: automessage
     username: root
     password: ""
     useSSL: true
+
+# Intervall der automatischen Benachrichtigungen in Minuten.
+AutomessageInterval: 30
+# Reihenfolge der Nachrichten: RANDOM (zufällig), ASC (aufsteigend) oder DESC (absteigend).
+AutomessageView: RANDOM
+
+AutomessageDefaultText:
+  - '<dark_gray>***********************************'
+  - '<gold>Für jede Zeile einmal <Farbe>'
+  - '<dark_gray>***********************************'
+
 
