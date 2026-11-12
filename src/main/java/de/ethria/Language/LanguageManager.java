@@ -91,6 +91,10 @@ public final class LanguageManager {
     }
 
     public List<Component> messages(String key) {
+        return messages(key, new String[0]);
+    }
+
+    public List<Component> messages(String key, String... placeholders) {
         if (messages == null) return List.of(miniMessage.deserialize(key));
         List<String> values = messages.getStringList(key);
         if (values.isEmpty()) {
@@ -98,6 +102,11 @@ public final class LanguageManager {
             if (single == null) single = key;
             values = new ArrayList<>(List.of(single.split("\\n", -1)));
         }
-        return values.stream().map(miniMessage::deserialize).toList();
+        TagResolver.Builder resolver = TagResolver.builder();
+        for (int i = 0; i + 1 < placeholders.length; i += 2) {
+            resolver.resolver(Placeholder.unparsed(placeholders[i], placeholders[i + 1]));
+        }
+        TagResolver tagResolver = resolver.build();
+        return values.stream().map(line -> miniMessage.deserialize(line, tagResolver)).toList();
     }
 }

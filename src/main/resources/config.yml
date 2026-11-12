@@ -8,6 +8,7 @@ Prefix: '&9&lEthria &8≫ '
 DragonEgg: true
 LocateBiome: true
 HoloPanel: true
+AutoMessage: true
 
 # PlotSquared-Prüfung für den Dragon-Egg-Schneider.
 PlotSquaredCheck: true

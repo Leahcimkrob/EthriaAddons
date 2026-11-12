@@ -16,6 +16,11 @@
 overview:
   rows: 6
 
+# Destination selector used when a panel has multiple positions.
+# Three content rows plus the separate bottom button row.
+destinations:
+  rows: 4
+
 button:
   previous:
     slot: 45

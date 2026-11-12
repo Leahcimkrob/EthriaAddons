@@ -23,6 +23,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -107,7 +108,7 @@ public final class Editor implements Listener {
                 if (icon == null) icon = new ItemStack(Material.ARMOR_STAND);
                 ItemMeta meta = icon.getItemMeta();
                 meta.displayName(language.message("holopanel.overview-entry", "name", panel.name()));
-                meta.lore(List.of(language.message("holopanel.overview-lore")));
+                meta.lore(language.messages("holopanel.overview-lore"));
                 icon.setItemMeta(meta);
                 inventory.setItem(slot, icon);
                 holder.panelsBySlot.put(slot, panel.id());
@@ -146,6 +147,85 @@ public final class Editor implements Listener {
             plugin.getLogger().log(Level.SEVERE, "Could not load HoloPanel " + id + " for editing.", exception);
             player.sendMessage(language.message("holopanel.database-error"));
         }
+    }
+
+    private void openPanelDestinations(Player player, long panelId, int overviewPage) {
+        try {
+            List<PanelLocation> locations = database.getPanelLocations(panelId).stream()
+                    .filter(location -> location.server() == null || location.server().isBlank()
+                            || location.server().equalsIgnoreCase(database.getServerName()))
+                    .toList();
+            if (locations.isEmpty()) {
+                player.sendMessage(language.message("holopanel.no-locations"));
+                return;
+            }
+            if (locations.size() == 1) {
+                teleportToPanelLocation(player, locations.get(0));
+                return;
+            }
+            int size = guiSize("destinations.rows", 36, 4);
+            int contentSize = size - 9;
+            DestinationHolder holder = new DestinationHolder(overviewPage);
+            Inventory inventory = Bukkit.createInventory(holder, size,
+                    language.message("holopanel.destinations-title"));
+            holder.inventory = inventory;
+            fillButtonBar(inventory);
+            for (int index = 0; index < locations.size() && index < contentSize; index++) {
+                PanelLocation location = locations.get(index);
+                World world = Bukkit.getWorld(location.world());
+                if (world == null) continue;
+                ItemStack icon = new ItemStack(Material.ENDER_EYE);
+                ItemMeta meta = icon.getItemMeta();
+                meta.displayName(language.message("holopanel.destination-name",
+                        "name", String.valueOf(index + 1)));
+                meta.lore(language.messages("holopanel.destination-lore",
+                        "world", world.getName(), "x", String.valueOf(location.x()),
+                        "y", String.valueOf(location.y()), "z", String.valueOf(location.z())));
+                icon.setItemMeta(meta);
+                inventory.setItem(index, icon);
+                holder.locationsBySlot.put(index, location);
+            }
+            setSharedButton(inventory, "back");
+            player.openInventory(inventory);
+        } catch (SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Could not load HoloPanel positions for " + panelId + ".", exception);
+            player.sendMessage(language.message("holopanel.database-error"));
+        }
+    }
+
+    private void teleportToPanelLocation(Player player, PanelLocation position) {
+        World world = Bukkit.getWorld(position.world());
+        if (world == null) {
+            player.sendMessage(language.message("holopanel.destination-world-unavailable"));
+            return;
+        }
+        double x = position.x();
+        double z = position.z();
+        double xFraction = x - Math.floor(x);
+        double zFraction = z - Math.floor(z);
+        boolean xWallOffset = isWallOffsetFraction(xFraction);
+        boolean zWallOffset = isWallOffsetFraction(zFraction);
+        if (xWallOffset && !zWallOffset) x += isPositiveWallOffset(xFraction) ? 2.0 : -2.0;
+        else if (zWallOffset && !xWallOffset) z += isPositiveWallOffset(zFraction) ? 2.0 : -2.0;
+        double y = position.y() + 0.25 - position.heightBlocks();
+        Location teleportTarget = new Location(world, x, y, z);
+        double dx = position.x() - teleportTarget.getX();
+        double dy = (position.y() - position.heightBlocks() + 1.5) - teleportTarget.getY();
+        double dz = position.z() - teleportTarget.getZ();
+        double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        float pitch = (float) -Math.toDegrees(Math.atan2(dy, horizontalDistance));
+        teleportTarget.setYaw(yaw);
+        teleportTarget.setPitch(pitch);
+        player.teleportAsync(teleportTarget);
+    }
+
+    private boolean isWallOffsetFraction(double fraction) {
+        return Math.abs(fraction - 0.05) < 0.02 || Math.abs(fraction - 0.95) < 0.02;
+    }
+
+    private boolean isPositiveWallOffset(double fraction) {
+        return Math.abs(fraction - 0.05) < 0.02;
     }
 
     private void openItemEditor(Player player, Panel panel, int page) {
@@ -195,7 +275,21 @@ public final class Editor implements Listener {
             if (slot == configuredSlot("button.close", overviewSize - 5, overviewSize)) player.closeInventory();
             else if (slot == configuredSlot("button.previous", overviewSize - 9, overviewSize) && overview.page > 0) openOverview(player, overview.page - 1);
             else if (slot == configuredSlot("button.next-page", overviewSize - 1, overviewSize)) openOverview(player, overview.page + 1);
-            else if (overview.panelsBySlot.containsKey(slot)) openDetail(player, overview.panelsBySlot.get(slot), overview.page);
+            else if (overview.panelsBySlot.containsKey(slot)) {
+                long panelId = overview.panelsBySlot.get(slot);
+                if (event.getClick().isRightClick()) openDetail(player, panelId, overview.page);
+                else if (event.getClick().isLeftClick()) openPanelDestinations(player, panelId, overview.page);
+            }
+            return;
+        }
+        if (holder instanceof DestinationHolder destinations) {
+            int size = guiSize("destinations.rows", 36, 4);
+            if (slot == configuredSlot("button.back", defaultSlot("button.back", size), size)) {
+                openOverview(player, destinations.page);
+                return;
+            }
+            PanelLocation location = destinations.locationsBySlot.get(slot);
+            if (location != null) teleportToPanelLocation(player, location);
             return;
         }
         DetailHolder detail = (DetailHolder) holder;
@@ -757,6 +851,11 @@ public final class Editor implements Listener {
     private static final class DetailHolder extends EditorHolder {
         final long id; final int page;
         DetailHolder(long id, int page) { this.id = id; this.page = page; }
+    }
+    private static final class DestinationHolder extends EditorHolder {
+        final int page;
+        final Map<Integer, PanelLocation> locationsBySlot = new HashMap<>();
+        DestinationHolder(int page) { this.page = page; }
     }
     private static final class ItemHolder extends EditorHolder {
         final long id; final int page;
