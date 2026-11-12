@@ -43,8 +43,8 @@ public final class Config implements Listener {
         Inventory inventory = Bukkit.createInventory(holder, size, language.message("automessage.config-title"));
         int interval = Math.max(1, plugin.autoMessageConfig().getInt("AutomessageInterval", 30));
         String mode = plugin.autoMessageConfig().getString("AutomessageView", "RANDOM");
-        inventory.setItem(gui.getInt("config.interval-slot", 11), setting(Material.CLOCK, "automessage.config-interval", Integer.toString(interval)));
-        inventory.setItem(gui.getInt("config.view-slot", 15), setting(Material.SPYGLASS, "automessage.config-view", mode));
+        inventory.setItem(gui.getInt("config.interval-slot", 11), setting(Material.CLOCK, "automessage.config-interval", Integer.toString(interval), "automessage.config-interval-lore"));
+        inventory.setItem(gui.getInt("config.view-slot", 15), setting(Material.SPYGLASS, "automessage.config-view", mode, "automessage.config-view-lore"));
         int defaultTextSlot = gui.getInt("config.default-text-slot", 13);
         inventory.setItem(defaultTextSlot, settingLore(Material.PAPER, "automessage.config-default-text",
                 plugin.autoMessageConfig().getStringList("AutomessageDefaultText")));
@@ -119,10 +119,13 @@ public final class Config implements Listener {
         }
     }
 
-    private ItemStack setting(Material material, String key, String value) {
+    private ItemStack setting(Material material, String key, String value, String loreKey) {
         ItemStack item = named(material, key);
         ItemMeta meta = item.getItemMeta();
-        meta.lore(List.of(language.message("automessage.config-current", "value", value)));
+        List<net.kyori.adventure.text.Component> lore = new java.util.ArrayList<>();
+        lore.add(language.message("automessage.config-current", "value", value));
+        lore.addAll(language.messages(loreKey));
+        meta.lore(lore);
         item.setItemMeta(meta);
         return item;
     }

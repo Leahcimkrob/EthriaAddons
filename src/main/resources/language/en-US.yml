@@ -127,6 +127,16 @@ automessage:
     - ""
     - "<green>Preview of the default entry:"
   config-title: "<dark_blue><bold>AutoMessage Settings"
+  config-interval-lore:
+    - "<gray>Left-click: increase interval by 1 minute"
+    - "<gray>Right-click: decrease interval by 1 minute"
+  config-view-lore:
+    - "<gray>Left-click: next order"
+    - "<gray>Right-click: previous order"
+    - "<dark_gray>RANDOM → ASC → DESC"
+    - "<dark_gray>RANDOM: random message"
+    - "<dark_gray>ASC: ascending by ID"
+    - "<dark_gray>DESC: descending by ID"
   preview-divider: "<dark_green>╔════════════ Preview ════════════╗"
   config-interval: "<gold>Change interval"
   config-view: "<aqua>Change selection order"
