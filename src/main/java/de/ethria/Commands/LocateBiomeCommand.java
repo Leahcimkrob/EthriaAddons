@@ -3,11 +3,14 @@ package de.ethria.Commands;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.event.ClickCallback;
 import de.ethria.Language.LanguageManager;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.command.Command;
@@ -47,11 +50,8 @@ public final class LocateBiomeCommand implements CommandExecutor {
                 if (player.hasPermission("ethriaaddons.command.locatebiome.use")) {
                     if (args.length == 1) {
 
-                        Biome targetBiome;
-
-                        try {
-                            targetBiome = Biome.valueOf(args[0].toUpperCase());
-                        } catch (IllegalArgumentException e) {
+                        Biome targetBiome = resolveBiome(args[0]);
+                        if (targetBiome == null) {
                             player.sendMessage(language.message("locatebiome.invalid-biome"));
                             return false;
                         }
@@ -70,15 +70,24 @@ public final class LocateBiomeCommand implements CommandExecutor {
                                 if (hasTimeoutPassed(player.getUniqueId())) {
                                     if (currentBalance >= LBMoney && economy.withdrawPlayer(player, LBMoney).transactionSuccess()) {
                                         Location highestLocation = getHighestNonLiquidBlock(nearestBiome);
+                                        if (highestLocation == null) {
+                                            player.sendMessage(language.message("locatebiome.not-found"));
+                                            return;
+                                        }
 
                                         player.sendMessage(language.message("locatebiome.found", "biome", targetBiome.getKey().getKey()));
 
                         Component message = language.message("locatebiome.coordinates", "x", String.valueOf(highestLocation.getBlockX()), "y", String.valueOf(highestLocation.getBlockY()), "z", String.valueOf(highestLocation.getBlockZ()))
                                 .hoverEvent(HoverEvent.showText(language.message("locatebiome.teleport-hover")))
-                                .clickEvent(ClickEvent.runCommand("/teleport "
-                                        + highestLocation.getBlockX() + " "
-                                        + highestLocation.getBlockY() + " "
-                                        + highestLocation.getBlockZ()));
+                                .clickEvent(ClickEvent.callback(audience -> {
+                                    if (audience instanceof Player) {
+                                        Player clickingPlayer = (Player) audience;
+                                                Location safeLocation = getHighestNonLiquidBlock(nearestBiome);
+                                                if (safeLocation != null) {
+                                                    clickingPlayer.teleportAsync(safeLocation);
+                                                }
+                                    }
+                                }));
 
                         player.sendMessage(message);
                                         player.sendMessage(language.message("locatebiome.money-charged", "amount", String.valueOf(LBMoney)));
@@ -109,6 +118,19 @@ public final class LocateBiomeCommand implements CommandExecutor {
         return false;
     }
 
+    private Biome resolveBiome(String input) {
+        NamespacedKey key = NamespacedKey.fromString(input.toLowerCase(java.util.Locale.ROOT));
+        if (key != null) {
+            Biome biome = Registry.BIOME.get(key);
+            if (biome != null) {
+                return biome;
+            }
+        }
+
+        // Keep compatibility with input such as "DESERT" as well as "minecraft:desert".
+        return Registry.BIOME.get(NamespacedKey.minecraft(input.toLowerCase(java.util.Locale.ROOT)));
+    }
+
     private Location findNearestBiome(World world, Location startLocation, Biome targetBiome) {
         int radius = 10000;
         for (int x = -radius; x <= radius; x += 16) {
@@ -127,19 +149,26 @@ public final class LocateBiomeCommand implements CommandExecutor {
         World world = location.getWorld();
         int x = location.getBlockX();
         int z = location.getBlockZ();
-
-        int y = world.getHighestBlockYAt(x, z);
-
-        while (y > 0) {
-            Location blockLocation = new Location(world, x, y, z);
-            Material blockType = blockLocation.getBlock().getType();
-            if (!blockType.equals(Material.LAVA) && !blockType.equals(Material.WATER) && blockType.isSolid()) {
-                return blockLocation.add(0, 1, 0);
-            }
-            y--;
+        int minY = world.getMinHeight();
+        int maxY = world.getMaxHeight() - 2;
+        if (world.getEnvironment() == World.Environment.NETHER) {
+            // Keep feet and head below the Nether roof (normally the roof begins at Y=128).
+            maxY = Math.min(maxY, 123);
         }
 
-        return new Location(world, x, world.getHighestBlockYAt(x, z), z);
+        int startY = Math.min(world.getHighestBlockYAt(x, z), maxY);
+        for (int y = startY; y >= minY; y--) {
+            Material floor = world.getBlockAt(x, y, z).getType();
+            Material feet = world.getBlockAt(x, y + 1, z).getType();
+            Material head = world.getBlockAt(x, y + 2, z).getType();
+            if (floor.isSolid() && floor != Material.LAVA && floor != Material.WATER
+                    && feet.isAir() && head.isAir()) {
+                return new Location(world, x + 0.5, y + 1, z + 0.5);
+            }
+        }
+
+        // Do not teleport into an unsafe position if no clear two-block space exists here.
+        return null;
     }
 
     public boolean hasTimeoutPassed(UUID playerId) {
