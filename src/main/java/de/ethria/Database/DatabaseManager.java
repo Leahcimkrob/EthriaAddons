@@ -673,7 +673,7 @@ public final class DatabaseManager {
             try {
                 if (autoMessage) {
                     ensureAutoMessageTable(target, targetType);
-                    copyTable(source, target, "automessages");
+                    mergeAutoMessages(source, target, targetType);
                 } else {
                     ensurePanelTables(target, targetType);
                     copyTable(source, target, "holopanels");
@@ -734,10 +734,92 @@ public final class DatabaseManager {
             java.sql.ResultSetMetaData md = rs.getMetaData(); int count = md.getColumnCount();
             StringBuilder cols = new StringBuilder(), marks = new StringBuilder();
             for (int i=1;i<=count;i++) { if(i>1){cols.append(',');marks.append(',');} cols.append(md.getColumnName(i)); marks.append('?'); }
-            try (PreparedStatement insert = target.prepareStatement("INSERT INTO " + table + " (" + cols + ") VALUES (" + marks + ")")) {
+            String insertSql = "sqlite".equalsIgnoreCase(target.getMetaData().getDatabaseProductName())
+                    ? "INSERT OR IGNORE INTO " + table + " (" + cols + ") VALUES (" + marks + ")"
+                    : "INSERT IGNORE INTO " + table + " (" + cols + ") VALUES (" + marks + ")";
+            try (PreparedStatement insert = target.prepareStatement(insertSql)) {
                 while(rs.next()){ for(int i=1;i<=count;i++) insert.setObject(i, rs.getObject(i)); insert.addBatch(); }
                 insert.executeBatch();
             }
+        }
+    }
+
+    private void mergeAutoMessages(Connection source, Connection target, String targetType) throws SQLException {
+        java.util.Map<Long, Long> messageIds = new java.util.HashMap<>();
+        try (Statement read = source.createStatement(); ResultSet messages = read.executeQuery("SELECT id,name,description,item_base64 FROM automessages ORDER BY id")) {
+            while (messages.next()) {
+                long sourceId = messages.getLong("id");
+                String name = messages.getString("name");
+                String description = messages.getString("description");
+                String item = messages.getString("item_base64");
+                Long targetId = findMatchingAutoMessage(target, name, description);
+                if (targetId == null) {
+                    String uniqueName = uniqueAutoMessageName(target, name);
+                    try (PreparedStatement insert = target.prepareStatement("INSERT INTO automessages (name,description,item_base64) VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS)) {
+                        insert.setString(1, uniqueName); insert.setString(2, description); insert.setString(3, item); insert.executeUpdate();
+                        try (ResultSet keys = insert.getGeneratedKeys()) {
+                            if (!keys.next()) throw new SQLException("Could not retrieve imported AutoMessage ID for '" + uniqueName + "'.");
+                            targetId = keys.getLong(1);
+                        }
+                    }
+                }
+                messageIds.put(sourceId, targetId);
+            }
+        }
+        try (Statement readServers = source.createStatement(); ResultSet servers = readServers.executeQuery("SELECT servername FROM servers")) {
+            try (PreparedStatement insertServer = target.prepareStatement("INSERT INTO servers (servername) SELECT ? WHERE NOT EXISTS (SELECT 1 FROM servers WHERE servername=?)")) {
+                while (servers.next()) {
+                    String name = servers.getString(1);
+                    insertServer.setString(1, name); insertServer.setString(2, name); insertServer.addBatch();
+                }
+                insertServer.executeBatch();
+            }
+        }
+        String sql = "SELECT x.automessage_id, ss.servername FROM automessage_servers x "
+                + "JOIN servers ss ON ss.id=x.server_id";
+        try (Statement readLinks = source.createStatement(); ResultSet links = readLinks.executeQuery(sql)) {
+            String insertSql = "sqlite".equalsIgnoreCase(targetType)
+                    ? "INSERT OR IGNORE INTO automessage_servers (automessage_id,server_id) VALUES (?,?)"
+                    : "INSERT IGNORE INTO automessage_servers (automessage_id,server_id) VALUES (?,?)";
+            try (PreparedStatement findServer = target.prepareStatement("SELECT id FROM servers WHERE servername=?");
+                 PreparedStatement insertLink = target.prepareStatement(insertSql)) {
+                while (links.next()) {
+                    Long targetMessageId = messageIds.get(links.getLong(1));
+                    if (targetMessageId == null) continue;
+                    findServer.setString(1, links.getString(2));
+                    try (ResultSet targetServer = findServer.executeQuery()) {
+                        if (!targetServer.next()) continue;
+                        insertLink.setLong(1, targetMessageId); insertLink.setLong(2, targetServer.getLong(1)); insertLink.addBatch();
+                    }
+                }
+                insertLink.executeBatch();
+            }
+        }
+    }
+
+    private Long findMatchingAutoMessage(Connection target, String name, String description) throws SQLException {
+        try (PreparedStatement query = target.prepareStatement("SELECT id FROM automessages WHERE name=? AND ((description IS NULL AND ? IS NULL) OR description=?) ORDER BY id LIMIT 1")) {
+            query.setString(1, name); query.setString(2, description); query.setString(3, description);
+            try (ResultSet result = query.executeQuery()) { return result.next() ? result.getLong(1) : null; }
+        }
+    }
+
+    private String uniqueAutoMessageName(Connection target, String originalName) throws SQLException {
+        String base = originalName == null || originalName.isBlank() ? "Imported message" : originalName;
+        if (base.length() > 105) base = base.substring(0, 105);
+        String candidate = base;
+        int suffix = 2;
+        while (autoMessageNameExists(target, candidate)) {
+            String ending = " (" + suffix++ + ")";
+            candidate = base.substring(0, Math.min(base.length(), 128 - ending.length())) + ending;
+        }
+        return candidate;
+    }
+
+    private boolean autoMessageNameExists(Connection target, String name) throws SQLException {
+        try (PreparedStatement query = target.prepareStatement("SELECT 1 FROM automessages WHERE name=?")) {
+            query.setString(1, name);
+            try (ResultSet result = query.executeQuery()) { return result.next(); }
         }
     }
 
