@@ -161,6 +161,7 @@ automessage:
   help-debug: "<yellow>/automessage debug <gray>– show server and time until next message"
   help-reload: "<yellow>/automessage reload <gray>– reload AutoMessage configuration"
   help-convert: "<yellow>/automessage convert <sqlite|mysql> <sqlite|mysql> <gray>– copy database data"
+  help-preview: "<yellow>/automessage preview <name> <gray>– preview the message for yourself"
   delete-button: "<red>Delete AutoMessage"
   delete-title: "<red>Delete AutoMessage <yellow><name></yellow>?"
   delete-confirm: "<red>Delete"

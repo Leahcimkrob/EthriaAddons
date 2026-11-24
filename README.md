@@ -7,7 +7,7 @@ EthriaAddons bündelt mehrere konfigurierbare Erweiterungen für Paper-Server.
 - **DragonEgg:** Spezialwerkzeuge mit konfigurierbarem Namen, Lore und Custom-Model-Data. Optional lässt sich der Abbau in einer festgelegten PlotSquared-Welt auf eigene Plots beschränken.
 - **LocateBiome:** Unterstützt Spielende beim Auffinden eines ausgewählten Bioms. Kosten, Abklingzeit und Berechtigung sind konfigurierbar.
 - **HoloPanel:** Verwaltet Panels mit Überschrift, mehrzeiliger Beschreibung und optionalem Item. Zu jedem Panel können mehrere Positionen gespeichert werden. Eine GUI unterstützt Bearbeitung und Platzierung; Hologramme werden wahlweise über CMI, DecentHolograms oder Paper-Textanzeigen dargestellt.
-- **AutoMessage:** Speichert Nachrichten serverbezogen in einer eigenen SQLite- oder MySQL-Datenbank. Der Editor bietet Übersicht, Vorschau, Statusumschaltung, Text- und Itembearbeitung sowie Löschen. Ein Scheduler sendet aktive Nachrichten im konfigurierten Intervall.
+- **AutoMessage:** Unterstützt sowohl serverbezogene als auch serverübergreifende (Cross-Server) Nachrichten. Bei Verwendung einer SQLite-Datenbank sind ausschließlich serverbezogene Nachrichten möglich, während eine gemeinsame MySQL-Datenbank sowohl serverbezogene als auch serverübergreifende Nachrichten ermöglicht. Der Editor bietet eine Übersicht, Vorschau, Statusumschaltung sowie die Möglichkeit, Texte und Items zu bearbeiten oder Nachrichten zu löschen. Ein Scheduler sendet aktive Nachrichten im konfigurierten Intervall entsprechend ihrer Serverzuordnung.
 - **Konfiguration und Sprache:** Addons lassen sich einzeln aktivieren. Nachrichten sind auf Deutsch und Englisch verfügbar; Einstellungen und Sprachdateien werden beim Neuladen ergänzt.
 
 ## Konfiguration

@@ -299,7 +299,7 @@ public final class DatabaseManager {
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (keys.next()) {
                     long id = keys.getLong(1);
-                    if (plugin.autoMessageConfig().getBoolean("crossserver", false)) addAutoMessageServer(connection, id, serverName);
+                    addAutoMessageServer(connection, id, serverName);
                     connection.commit();
                     return id;
                 }

@@ -27,6 +27,8 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
     private final de.ethria.Commands.AutoMessageSubcommands.Help help;
     private final de.ethria.Commands.AutoMessageSubcommands.Config configGui;
     private final de.ethria.Commands.AutoMessageSubcommands.Convert convert;
+    private final de.ethria.Commands.AutoMessageSubcommands.View view;
+    private final de.ethria.Commands.AutoMessageSubcommands.Preview preview;
 
     public AutoMessageCommand(Main plugin, DatabaseManager database, LanguageManager language) {
         this.plugin = plugin;
@@ -39,6 +41,8 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
         this.configGui = new de.ethria.Commands.AutoMessageSubcommands.Config(plugin, language,
                 de.ethria.Config.YamlDefaults.loadAndUpdate(plugin, "Addons/AutoMesssage/automessageGUi.yml", new java.io.File(plugin.getDataFolder(), "Addons/AutoMesssage/automessageGUi.yml")));
         this.convert = new de.ethria.Commands.AutoMessageSubcommands.Convert(database, language);
+        this.view = new de.ethria.Commands.AutoMessageSubcommands.View(plugin, database, language);
+        this.preview = new de.ethria.Commands.AutoMessageSubcommands.Preview(plugin, database, language);
     }
 
     @Override
@@ -90,8 +94,15 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(language.message("automessage.no-permission"));
                 return true;
             }
-            String name = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)).trim();
-            editor.view(sender, name);
+            view.execute(sender, String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)).trim());
+            return true;
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("preview")) {
+            if (!sender.hasPermission("ethriaaddons.command.automessage.view")) {
+                sender.sendMessage(language.message("automessage.no-permission"));
+                return true;
+            }
+            preview.execute(sender, String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)).trim());
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
@@ -115,7 +126,7 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             String prefix = args[0].toLowerCase(Locale.ROOT);
-            return List.of("create", "editor", "view", "delete", "config", "reload", "debug", "convert", "help").stream()
+            return List.of("create", "editor", "view", "preview", "delete", "config", "reload", "debug", "convert", "help").stream()
                     .filter(value -> value.startsWith(prefix))
                     .filter(value -> !value.equals("create") || sender.hasPermission("ethriaaddons.command.automessage.create"))
                     .filter(value -> !value.equals("reload") || sender.hasPermission("ethriaaddons.command.automessage.reload"))
@@ -132,6 +143,11 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
             try {
                 return database.getAutoMessageNames().stream().filter(name -> name.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
             } catch (java.sql.SQLException ignored) { return List.of(); }
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("preview") && sender.hasPermission("ethriaaddons.command.automessage.view")) {
+            String prefix = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)).toLowerCase(Locale.ROOT);
+            try { return database.getAutoMessageNames().stream().filter(name -> name.toLowerCase(Locale.ROOT).startsWith(prefix)).toList(); }
+            catch (java.sql.SQLException ignored) { return List.of(); }
         }
         if (args.length >= 2 && args[0].equalsIgnoreCase("delete") && sender.hasPermission("ethriaaddons.command.automessage.delete")) {
             String prefix = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)).toLowerCase(Locale.ROOT);

@@ -76,7 +76,6 @@ public final class AutoMessageScheduler {
     }
 
     private boolean assignedHere(DatabaseManager.AutoMessage message) {
-        if (!plugin.autoMessageConfig().getBoolean("crossserver", false)) return true;
         try { return database.isAutoMessageAssignedToServer(message.id(), database.getServerName()); }
         catch (SQLException exception) {
             plugin.getLogger().log(Level.WARNING, "Could not check AutoMessage server assignment.", exception);

@@ -111,8 +111,7 @@ public final class Editor implements Listener {
                 item.setItemMeta(meta);
                 inventory.setItem(messageSlot, item);
                 holder.names.put(messageSlot, name);
-                boolean assignedHere = !plugin.autoMessageConfig().getBoolean("crossserver", false)
-                        || database.isAutoMessageAssignedToServer(message.id(), database.getServerName());
+                boolean assignedHere = database.isAutoMessageAssignedToServer(message.id(), database.getServerName());
                 String state = assignedHere ? "on" : "off";
                 String statusPath = "overview.status." + state;
                 ItemStack status = configuredButton(statusPath,
@@ -163,7 +162,7 @@ public final class Editor implements Listener {
         if (event.getClick().isRightClick()) {
             openSettings(player, name);
         } else if (event.getClick().isShiftClick() && event.getClick().isLeftClick()) {
-            view(player, name);
+            new View(plugin, database, language).execute(player, name);
         }
     }
 
@@ -172,8 +171,6 @@ public final class Editor implements Listener {
             DatabaseManager.AutoMessage message = database.getAutoMessage(name);
             if (message == null) {
                 sender.sendMessage(language.message("automessage.not-found", "name", name));
-            } else if (!database.isAutoMessageAssignedToServer(message.id(), database.getServerName())) {
-                sender.sendMessage(language.message("automessage.wrong-server", "server", database.getServerName()));
             } else if (message.description() == null || message.description().isBlank()) {
                 sender.sendMessage(language.message("automessage.empty-message", "name", name));
             } else {
@@ -366,7 +363,7 @@ public final class Editor implements Listener {
         try {
             DatabaseManager.AutoMessage message = database.getAutoMessage(name);
             if (message == null) return;
-            if (plugin.autoMessageConfig().getBoolean("crossserver", false)) database.toggleAutoMessageServer(message.id(), database.getServerName());
+            database.toggleAutoMessageServer(message.id(), database.getServerName());
             open(player);
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.WARNING, "Could not toggle AutoMessage server assignment.", exception);
