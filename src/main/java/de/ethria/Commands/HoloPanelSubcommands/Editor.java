@@ -731,24 +731,23 @@ public final class Editor implements Listener {
         String type = config.getString(path + ".type", "material").toLowerCase(java.util.Locale.ROOT);
         String headDatabaseId = config.getString(path + ".head-database-id", "");
         ItemStack item = headDatabaseId.isBlank() ? null : headDatabaseItem(headDatabaseId);
-        if (type.equals("itemsadder")) {
-            String itemId = config.getString(path + ".item-id", "");
-            if (plugin.getServer().getPluginManager().isPluginEnabled("ItemsAdder") && !itemId.isBlank()) {
-                try {
-                    Class<?> customStack = Class.forName("dev.lone.itemsadder.api.CustomStack");
-                    Object result = customStack.getMethod("getInstance", String.class).invoke(null, itemId);
-                    if (result != null) item = (ItemStack) customStack.getMethod("getItemStack").invoke(result);
-                } catch (ReflectiveOperationException | ClassCastException exception) {
-                    plugin.getLogger().warning("Could not load ItemsAdder GUI item '" + itemId + "': " + exception.getMessage());
-                }
-            }
-        }
+        String itemId = config.getString(path + ".item-id", "");
         if (item == null) {
             String fallbackName = config.getString(path + ".fallback-material", fallback.name());
             String materialName = config.getString(path + ".material", fallbackName);
             Material material = Material.matchMaterial(materialName);
             if (material == null || !material.isItem()) material = Material.matchMaterial(fallbackName);
             item = new ItemStack(material == null || !material.isItem() ? fallback : material);
+        }
+        if (!itemId.isBlank()) {
+            try {
+                int modelData = Integer.parseInt(itemId.trim());
+                if (modelData < 0) throw new NumberFormatException("negative ID");
+                ItemMeta modelMeta = item.getItemMeta();
+                if (modelMeta != null) { modelMeta.setCustomModelData(modelData); item.setItemMeta(modelMeta); }
+            } catch (NumberFormatException exception) {
+                plugin.getLogger().warning("Invalid numeric item-id at " + path + ": '" + itemId + "'.");
+            }
         }
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {

@@ -30,6 +30,7 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
     private final RemoveTool removeToolSubCommand;
     private final DeletePanel deleteSubCommand;
     private final ServerName serverNameSubCommand;
+    private final de.ethria.Commands.HoloPanelSubcommands.Convert convertSubCommand;
     private final boolean enabled;
 
     public HoloPanelCommand(Main plugin, DatabaseManager database, LanguageManager language, Editor editor) {
@@ -41,6 +42,7 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
         this.removeToolSubCommand = new RemoveTool(editor, language);
         this.deleteSubCommand = new DeletePanel(editor, language);
         this.serverNameSubCommand = new ServerName(database);
+        this.convertSubCommand = new de.ethria.Commands.HoloPanelSubcommands.Convert(database, language);
         this.enabled = plugin.getConfig().getBoolean("HoloPanel", true);
     }
 
@@ -68,6 +70,10 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
                 } else {
                     helpSubCommand.execute(sender);
                 }
+            }
+            case "convert" -> {
+                if (args.length == 3) convertSubCommand.execute(sender, args[1], args[2]);
+                else helpSubCommand.execute(sender);
             }
             case "set", "remove", "delete" -> {
                 if (args.length < 2) {
@@ -114,6 +120,7 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
             if ("help".startsWith(prefix)) suggestions.add("help");
             if (sender.hasPermission("ethriaaddons.command.holopanel.reload") && "reload".startsWith(prefix)) suggestions.add("reload");
             if (sender.hasPermission("ethriaaddons.command.holopanel.servername") && "servername".startsWith(prefix)) suggestions.add("servername");
+            if (sender.hasPermission("ethriaaddons.command.holopanel.convert") && "convert".startsWith(prefix)) suggestions.add("convert");
             if (sender.hasPermission("ethriaaddons.command.holopanel.create") && "create".startsWith(prefix)) suggestions.add("create");
             if (sender.hasPermission("ethriaaddons.command.holopanel.editor") && "editor".startsWith(prefix)) suggestions.add("editor");
             if (sender.hasPermission("ethriaaddons.command.holopanel.set") && "set".startsWith(prefix)) suggestions.add("set");
@@ -121,6 +128,8 @@ public final class HoloPanelCommand implements CommandExecutor, TabCompleter {
             if (sender.hasPermission("ethriaaddons.command.holopanel.delete") && "delete".startsWith(prefix)) suggestions.add("delete");
             return suggestions;
         }
+        if (args.length == 2 && "convert".equalsIgnoreCase(args[0]) && sender.hasPermission("ethriaaddons.command.holopanel.convert")) return convertSubCommand.complete(args[1]);
+        if (args.length == 3 && "convert".equalsIgnoreCase(args[0]) && sender.hasPermission("ethriaaddons.command.holopanel.convert")) return convertSubCommand.complete(args[2]).stream().filter(type -> !type.equalsIgnoreCase(args[1])).toList();
         if (args.length >= 2 && List.of("set", "remove", "delete").contains(args[0].toLowerCase(Locale.ROOT))
                 && sender.hasPermission("ethriaaddons.command.holopanel." + args[0].toLowerCase(Locale.ROOT))) {
             String prefix = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)).toLowerCase(Locale.ROOT);

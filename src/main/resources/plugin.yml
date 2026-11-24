@@ -37,6 +37,7 @@ permissions:
       ethriaaddons.command.automessage.delete: true
       ethriaaddons.command.automessage.config: true
       ethriaaddons.command.automessage.debug: true
+      ethriaaddons.command.automessage.convert: true
   ethriaaddons.command.automessage.create:
     description: Darf Automessages erstellen
     default: op
@@ -57,6 +58,9 @@ permissions:
     default: op
   ethriaaddons.command.automessage.debug:
     description: Darf Automessage-Debuginformationen anzeigen
+    default: op
+  ethriaaddons.command.automessage.convert:
+    description: Darf AutoMessage-Daten zwischen Datenbanken kopieren
     default: op
   ethriaaddons.command.ethriaaddon.*:
     default: false
@@ -85,6 +89,7 @@ permissions:
       ethriaaddons.command.holopanel.remove: true
       ethriaaddons.command.holopanel.delete: true
       ethriaaddons.command.holopanel.servername: true
+      ethriaaddons.command.holopanel.convert: true
   ethriaaddons.command.holopanel.create:
     description: Darf HoloPanels erstellen
     default: false
@@ -106,6 +111,9 @@ permissions:
   ethriaaddons.command.holopanel.servername:
     description: Zeigt den von LuckPerms erkannten Servernamen
     default: false
+  ethriaaddons.command.holopanel.convert:
+    description: Darf HoloPanel-Daten zwischen Datenbanken kopieren
+    default: op
 
   ethriaaddons.command.dragoneggcutter.*:
     default: false

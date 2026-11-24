@@ -56,6 +56,8 @@ public final class Editor implements Listener {
         config = YamlDefaults.loadAndUpdate(plugin, "Addons/AutoMesssage/automessageGUi.yml", file);
     }
 
+    public void reloadGuiConfig() { reloadConfig(); }
+
     public void open(Player player) {
         try {
             List<DatabaseManager.AutoMessage> messages = database.getAutoMessages();
@@ -94,17 +96,35 @@ public final class Editor implements Listener {
                 ItemMeta meta = item.getItemMeta();
                 meta.displayName(language.message("automessage.editor-entry", "name", name));
                 meta.lore(null);
-                meta.lore(language.messages("automessage.editor-lore", "name", name));
+                List<Component> lore = new java.util.ArrayList<>();
+                if (plugin.autoMessageConfig().getBoolean("crossserver", false)) {
+                    lore.add(language.message("automessage.available-on"));
+                    List<String> assignedServers = database.getServersForAutoMessage(message.id());
+                    if (assignedServers.isEmpty()) lore.add(language.message("automessage.no-servers"));
+                    else assignedServers.forEach(server -> lore.add(language.message("automessage.available-server", "server", server)));
+                } else {
+                    lore.add(language.message("automessage.available-on"));
+                    lore.add(language.message("automessage.available-server", "server", database.getServerName()));
+                }
+                lore.addAll(language.messages("automessage.editor-lore", "name", name));
+                meta.lore(lore);
                 item.setItemMeta(meta);
                 inventory.setItem(messageSlot, item);
                 holder.names.put(messageSlot, name);
-                String statusPath = "overview.status.material-" + (message.active() ? "on" : "off");
-                String statusMaterialName = config.getString(statusPath,
-                        config.getString("overview.status.material_" + (message.active() ? "on" : "off"),
-                                message.active() ? "GREEN_WOOL" : "RED_WOOL"));
-                Material statusMaterial = Material.matchMaterial(statusMaterialName);
-                if (statusMaterial == null || !statusMaterial.isItem()) statusMaterial = message.active() ? Material.GREEN_WOOL : Material.RED_WOOL;
-                inventory.setItem(statusSlot, button(statusMaterial, message.active() ? "automessage.status-active" : "automessage.status-inactive"));
+                boolean assignedHere = !plugin.autoMessageConfig().getBoolean("crossserver", false)
+                        || database.isAutoMessageAssignedToServer(message.id(), database.getServerName());
+                String state = assignedHere ? "on" : "off";
+                String statusPath = "overview.status." + state;
+                ItemStack status = configuredButton(statusPath,
+                        assignedHere ? "automessage.status-active" : "automessage.status-inactive",
+                        assignedHere ? Material.GREEN_WOOL : Material.RED_WOOL);
+                if (!config.contains(statusPath + ".material")) {
+                    String legacy = config.getString("overview.status.material-" + state,
+                            config.getString("overview.status.material_" + state));
+                    Material legacyMaterial = legacy == null ? null : Material.matchMaterial(legacy);
+                    if (legacyMaterial != null && legacyMaterial.isItem()) status.setType(legacyMaterial);
+                }
+                inventory.setItem(statusSlot, status);
                 holder.statusNames.put(statusSlot, name);
             }
             Material filler = resolveMaterial("filler", Material.GRAY_STAINED_GLASS_PANE);
@@ -137,7 +157,7 @@ public final class Editor implements Listener {
         String name = holder.names.get(event.getRawSlot());
         if (name == null) {
             String statusName = holder.statusNames.get(event.getRawSlot());
-            if (statusName != null) toggleActive(player, new SettingsHolder(findId(statusName), statusName), true);
+            if (statusName != null) toggleServerAssignment(player, statusName);
             return;
         }
         if (event.getClick().isRightClick()) {
@@ -152,8 +172,8 @@ public final class Editor implements Listener {
             DatabaseManager.AutoMessage message = database.getAutoMessage(name);
             if (message == null) {
                 sender.sendMessage(language.message("automessage.not-found", "name", name));
-            } else if (!database.getServerName().equalsIgnoreCase(message.serverName())) {
-                sender.sendMessage(language.message("automessage.wrong-server", "server", String.valueOf(message.serverName())));
+            } else if (!database.isAutoMessageAssignedToServer(message.id(), database.getServerName())) {
+                sender.sendMessage(language.message("automessage.wrong-server", "server", database.getServerName()));
             } else if (message.description() == null || message.description().isBlank()) {
                 sender.sendMessage(language.message("automessage.empty-message", "name", name));
             } else {
@@ -179,8 +199,10 @@ public final class Editor implements Listener {
             if (event.getClick().isRightClick()) openTextDialog(player, holder);
             else if (event.getClick().isLeftClick()) preview(player, holder.name);
         }
-        else if (event.getRawSlot() == config.getInt("detail.button.status.slot", 14)) toggleActive(player, holder);
+        else if (event.getRawSlot() == config.getInt("detail.button.status.slot", 14)) toggleServerAssignment(player, holder.name);
         else if (event.getRawSlot() == config.getInt("detail.button.delete.slot", 16)) confirmDelete(player, holder);
+        else if (plugin.autoMessageConfig().getBoolean("crossserver", false)
+                && event.getRawSlot() == config.getInt("detail.button.servers.slot", 22)) openServerSelection(player, holder);
     }
 
     private void preview(Player player, String name) {
@@ -273,6 +295,10 @@ public final class Editor implements Listener {
             inventory.setItem(itemSlot, button(Material.CHEST, "automessage.settings-item"));
             inventory.setItem(textSlot, buttonWithLore(Material.CRAFTING_TABLE, "automessage.settings-text", "automessage.settings-text-lore"));
             inventory.setItem(deleteSlot, configuredButton("detail.button.delete", "automessage.delete-button", Material.BARRIER));
+            if (plugin.autoMessageConfig().getBoolean("crossserver", false)) {
+                inventory.setItem(configuredSlot("detail.button.servers.slot", 22, size - 10),
+                        configuredButton("detail.button.servers", "automessage.servers-button", Material.COMPASS));
+            }
             fillButtonBar(inventory);
             inventory.setItem(configuredSlot("button.back.slot", size - 5, size), configuredButton("button.back", "automessage.back", Material.ARROW));
             player.openInventory(inventory);
@@ -282,16 +308,68 @@ public final class Editor implements Listener {
         }
     }
 
-    private void toggleActive(Player player, SettingsHolder holder) { toggleActive(player, holder, false); }
-
-    private void toggleActive(Player player, SettingsHolder holder, boolean returnOverview) {
+    private void openServerSelection(Player player, SettingsHolder messageHolder) {
         try {
-            DatabaseManager.AutoMessage message = database.getAutoMessage(holder.name);
-            if (message == null) return;
-            database.updateAutoMessageActive(holder.id, !message.active());
-            if (returnOverview) open(player); else openSettings(player, holder.name);
+            List<String> servers = database.getAutoMessageServers();
+            int rows = Math.max(2, Math.min(6, config.getInt("servers.rows", 4)));
+            int size = rows * 9;
+            ServerHolder holder = new ServerHolder(messageHolder.id, messageHolder.name);
+            Inventory inventory = Bukkit.createInventory(holder, size,
+                    language.message("automessage.servers-title", "name", messageHolder.name));
+            holder.inventory = inventory;
+            int slot = 0;
+            int controlRow = size - 9;
+            for (String server : servers) {
+                if (slot >= controlRow) break;
+                boolean assigned = database.isAutoMessageAssignedToServer(messageHolder.id, server);
+                String path = assigned ? "servers.on" : "servers.off";
+                ItemStack item = configuredButton(path,
+                        assigned ? "automessage.server-enabled" : "automessage.server-disabled",
+                        assigned ? Material.LIME_DYE : Material.GRAY_DYE);
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null) meta.displayName(language.message(assigned ? "automessage.server-enabled" : "automessage.server-disabled", "server", server));
+                item.setItemMeta(meta);
+                inventory.setItem(slot, item);
+                holder.servers.put(slot, server);
+                slot++;
+            }
+            Material filler = resolveMaterial("filler", Material.GRAY_STAINED_GLASS_PANE);
+            for (int i = controlRow; i < size; i++) inventory.setItem(i, button(filler, "automessage.empty"));
+            inventory.setItem(configuredSlot("button.back.slot", size - 5, size),
+                    configuredButton("button.back", "automessage.back", Material.ARROW));
+            player.openInventory(inventory);
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.WARNING, "Could not update AutoMessage status.", exception);
+            plugin.getLogger().log(Level.WARNING, "Could not open AutoMessage server selection.", exception);
+            player.sendMessage(language.message("automessage.database-error"));
+        }
+    }
+
+    @EventHandler public void onServerSelectionClick(InventoryClickEvent event) {
+        if (!(event.getView().getTopInventory().getHolder() instanceof ServerHolder holder)) return;
+        event.setCancelled(true);
+        if (!(event.getWhoClicked() instanceof Player player) || event.getClickedInventory() != event.getView().getTopInventory()) return;
+        int size = event.getView().getTopInventory().getSize();
+        if (event.getRawSlot() == configuredSlot("button.back.slot", size - 5, size)) { openSettings(player, holder.name); return; }
+        String server = holder.servers.get(event.getRawSlot());
+        if (server == null) return;
+        try {
+            boolean assigned = database.isAutoMessageAssignedToServer(holder.messageId, server);
+            database.setAutoMessageServer(holder.messageId, server, !assigned);
+            openServerSelection(player, new SettingsHolder(holder.messageId, holder.name));
+        } catch (SQLException exception) {
+            plugin.getLogger().log(Level.WARNING, "Could not update AutoMessage server assignment.", exception);
+            player.sendMessage(language.message("automessage.database-error"));
+        }
+    }
+
+    private void toggleServerAssignment(Player player, String name) {
+        try {
+            DatabaseManager.AutoMessage message = database.getAutoMessage(name);
+            if (message == null) return;
+            if (plugin.autoMessageConfig().getBoolean("crossserver", false)) database.toggleAutoMessageServer(message.id(), database.getServerName());
+            open(player);
+        } catch (SQLException exception) {
+            plugin.getLogger().log(Level.WARNING, "Could not toggle AutoMessage server assignment.", exception);
             player.sendMessage(language.message("automessage.database-error"));
         }
     }
@@ -322,7 +400,10 @@ public final class Editor implements Listener {
     private ItemStack configuredButton(String path, String key, Material fallback) {
         String id = config.getString(path + ".head-database-id", "");
         ItemStack item = id.isBlank() ? null : headDatabaseItem(id);
+        String type = config.getString(path + ".type", "material");
+        String itemId = config.getString(path + ".item-id", "");
         if (item == null) item = new ItemStack(resolveMaterial(path, fallback));
+        applyCustomModelData(item, itemId, path);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.displayName(language.message(key));
@@ -333,6 +414,18 @@ public final class Editor implements Listener {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    private void applyCustomModelData(ItemStack item, String id, String path) {
+        if (id == null || id.isBlank()) return;
+        try {
+            int modelData = Integer.parseInt(id.trim());
+            if (modelData < 0) throw new NumberFormatException("negative ID");
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null) { meta.setCustomModelData(modelData); item.setItemMeta(meta); }
+        } catch (NumberFormatException exception) {
+            plugin.getLogger().warning("Invalid numeric item-id at " + path + ": '" + id + "'.");
+        }
     }
 
     private int configuredSlot(String path, int fallback, int size) {
@@ -445,7 +538,7 @@ public final class Editor implements Listener {
     }
 
     @EventHandler public void onDrag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof Holder || event.getView().getTopInventory().getHolder() instanceof SettingsHolder) event.setCancelled(true);
+        if (event.getView().getTopInventory().getHolder() instanceof Holder || event.getView().getTopInventory().getHolder() instanceof SettingsHolder || event.getView().getTopInventory().getHolder() instanceof ServerHolder) event.setCancelled(true);
         else if (event.getView().getTopInventory().getHolder() instanceof ItemHolder holder
                 && event.getRawSlots().stream().anyMatch(slot -> slot < event.getView().getTopInventory().getSize() && slot != holder.slot)) event.setCancelled(true);
     }
@@ -464,6 +557,12 @@ public final class Editor implements Listener {
     private static final class ItemHolder implements InventoryHolder {
         final long id; final String name; final int slot; Inventory inventory; boolean cancelSave;
         ItemHolder(long id, String name, int slot) { this.id = id; this.name = name; this.slot = slot; }
+        @Override public Inventory getInventory() { return inventory; }
+    }
+    private static final class ServerHolder implements InventoryHolder {
+        final long messageId; final String name; Inventory inventory;
+        final Map<Integer, String> servers = new HashMap<>();
+        ServerHolder(long messageId, String name) { this.messageId = messageId; this.name = name; }
         @Override public Inventory getInventory() { return inventory; }
     }
 }

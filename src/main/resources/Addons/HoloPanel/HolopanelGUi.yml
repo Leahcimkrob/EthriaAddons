@@ -1,17 +1,17 @@
 # GUI layout and button appearance. Slots are zero-based Bukkit inventory slots.
-# Button types: material, player-head, itemsadder, minecart.
-# For ItemsAdder use the custom item's ID in item-id; no namespace is needed.
+# Button types: material, player-head, minecart.
+# item-id is a numeric CustomModelData value applied to the configured material.
 
 # HeadDatabase head example: https://minecraft-heads.com/custom-heads/heads-database
 #   material: PLAYER_HEAD
 #   head-database-id: "xxxxx" (e.g. "75167")
 #   fallback-material: REDSTONE
-# ItemsAdder example (replace my_gui_button with the item's ID from your pack):
+# Custom model example:
 # button:
 #   back:
 #     slot: 49
-#     type: itemsadder
-#     item-id: "my_gui_button"
+#     material: PAPER
+#     item-id: 4300208
 #     fallback-material: ARROW
 overview:
   rows: 6
@@ -24,21 +24,25 @@ destinations:
 button:
   previous:
     slot: 45
+    type: player-head
     material: PLAYER_HEAD
     head-database-id: '94736'
     fallback-material: ARROW
   back:
     slot: 49
+    type: player-head
     material: PLAYER_HEAD
     head-database-id: '94681'
     fallback-material: ARROW
   close:
     slot: 49
+    type: player-head
     material: PLAYER_HEAD
     head-database-id: '34744'
     fallback-material: BARRIER
   next-page:
     slot: 53
+    type: player-head
     material: PLAYER_HEAD
     head-database-id: '94735'
     fallback-material: ARROW
@@ -48,17 +52,31 @@ detail:
   button:
     item:
       slot: 10
+      type: material
       material: CHEST
+      fallback-material: CHEST
+      head-database-id: ''
+      item-id: ''
     edit:
       slot: 12
+      type: material
       material: CRAFTING_TABLE
+      fallback-material: CRAFTING_TABLE
+      head-database-id: ''
+      item-id: ''
     tools:
       slot: 14
+      type: material
       material: LIGHTNING_ROD
       head-database-id: ''
+      item-id: ''
       fallback-material: STICK
     delete:
       slot: 16
+      type: material
+      material: BARRIER
+      head-database-id: ''
+      item-id: ''
       fallback-material: BARRIER
 
 # Detail and item-change use Back in the last row; the overview uses Close.
@@ -71,6 +89,9 @@ item-change:
 filler:
   type: material
   material: GRAY_STAINED_GLASS_PANE
+  fallback-material: GRAY_STAINED_GLASS_PANE
+  head-database-id: ''
+  item-id: ''
 
 # Enter this word in chat to cancel HoloPanel tool use and remove the tools.
 tools:

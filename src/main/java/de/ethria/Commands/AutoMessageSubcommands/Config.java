@@ -30,10 +30,15 @@ import java.util.List;
 public final class Config implements Listener {
     private final Main plugin;
     private final LanguageManager language;
-    private final YamlConfiguration gui;
+    private YamlConfiguration gui;
 
     public Config(Main plugin, LanguageManager language, YamlConfiguration gui) {
         this.plugin = plugin; this.language = language; this.gui = gui;
+    }
+
+    public void reloadGuiConfig() {
+        this.gui = de.ethria.Config.YamlDefaults.loadAndUpdate(plugin, "Addons/AutoMesssage/automessageGUi.yml",
+                new java.io.File(plugin.getDataFolder(), "Addons/AutoMesssage/automessageGUi.yml"));
     }
 
     public void open(Player player) {

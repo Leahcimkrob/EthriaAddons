@@ -13,6 +13,9 @@ database:
     password: ""
     useSSL: true
 
+# Wenn aktiviert, können Nachrichten mehreren Servern zugeordnet werden.
+crossserver: false
+
 # Intervall der automatischen Benachrichtigungen in Minuten.
 AutomessageInterval: 30
 # Reihenfolge der Nachrichten: RANDOM (zufällig), ASC (aufsteigend) oder DESC (absteigend).

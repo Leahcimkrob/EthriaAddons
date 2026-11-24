@@ -52,9 +52,8 @@ public final class AutoMessageScheduler {
         nextRunAtMillis = System.currentTimeMillis() + interval * 60_000L;
         try {
             List<DatabaseManager.AutoMessage> messages = database.getAutoMessages().stream()
-                    .filter(DatabaseManager.AutoMessage::active)
                     .filter(message -> message.description() != null && !message.description().isBlank())
-                    .filter(message -> database.getServerName().equalsIgnoreCase(message.serverName()))
+                    .filter(this::assignedHere)
                     .sorted(Comparator.comparingLong(DatabaseManager.AutoMessage::id))
                     .toList();
             if (messages.isEmpty()) return;
@@ -73,6 +72,15 @@ public final class AutoMessageScheduler {
             }
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.WARNING, "Could not select an automatic message.", exception);
+        }
+    }
+
+    private boolean assignedHere(DatabaseManager.AutoMessage message) {
+        if (!plugin.autoMessageConfig().getBoolean("crossserver", false)) return true;
+        try { return database.isAutoMessageAssignedToServer(message.id(), database.getServerName()); }
+        catch (SQLException exception) {
+            plugin.getLogger().log(Level.WARNING, "Could not check AutoMessage server assignment.", exception);
+            return false;
         }
     }
 }

@@ -19,6 +19,7 @@ holopanel:
   help-create: "<yellow>/holopanel create <Name> <gray>– neues Panel anlegen"
   help-editor: "<yellow>/holopanel editor <gray>– Panel-Übersicht öffnen"
   help-servername: "<yellow>/holopanel servername <gray>– LuckPerms-Servernamen anzeigen"
+  help-convert: "<yellow>/holopanel convert <sqlite|mysql> <sqlite|mysql> <gray>– Datenbankdaten kopieren"
   help-tools: "<gray>Im Editor kannst du Panels bearbeiten sowie Positionen setzen oder löschen."
   overview-title: "<dark_blue><bold>HoloPanel <dark_gray>| <yellow>Übersicht"
   overview-entry: "<gold><name>"
@@ -124,6 +125,14 @@ dragoneggcutter:
 
 # Nachrichten für den Befehl /automessage.
 automessage:
+  servers-button: "<gold>Serverzuordnung"
+  servers-title: "<gold>Server für <name>"
+  server-enabled: "<green><server> (aktiv)"
+  server-disabled: "<red><server> (deaktiviert)"
+  servers-button: "<gold>Serverzuordnung"
+  servers-title: "<gold>Server für <name>"
+  server-enabled: "<green><server> (aktiv)"
+  server-disabled: "<red><server> (deaktiviert)"
   config-default-text: "<yellow>Standardtext bearbeiten"
   config-default-text-title: "<dark_blue><bold>Automessage-Standardtext"
   config-default-text-lore:
@@ -154,6 +163,7 @@ automessage:
   help-config: "<yellow>/automessage config <gray>– Intervall und Reihenfolge einstellen"
   help-debug: "<yellow>/automessage debug <gray>– Server und Zeit bis zur nächsten Nachricht anzeigen"
   help-reload: "<yellow>/automessage reload <gray>– Automessage-Konfiguration neu laden"
+  help-convert: "<yellow>/automessage convert <sqlite|mysql> <sqlite|mysql> <gray>– Datenbankdaten kopieren"
   delete-button: "<red>Automessage löschen"
   delete-title: "<red>Automessage <yellow><name></yellow> löschen?"
   delete-confirm: "<red>Löschen"
@@ -182,9 +192,13 @@ automessage:
   empty: " "
   editor-title: "<dark_blue><bold>Automessages <dark_gray>| <yellow>Übersicht"
   editor-entry: "<gold><name>"
+  available-on: "<yellow>Verfügbar auf:"
+  available-server: "<gray>- <server>"
+  no-servers: "<gray>- Keine Server zugeordnet"
   editor-lore:
-    - "<green>Shift-Linksklick: Nachricht anzeigen"
+    - ""
     - "<yellow>Rechtsklick: Nachricht bearbeiten"
+    - "<green>Shift-Linksklick: Nachricht anzeigen"
   editor-edit-placeholder: "<yellow>Bearbeiten von <name> ist noch nicht verfügbar."
   editor-send-placeholder: "<yellow>Platzhalter: /automessage send <name>"
   no-permission: "<red>Dazu hast du keine Berechtigung."

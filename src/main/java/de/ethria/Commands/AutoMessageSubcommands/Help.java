@@ -9,7 +9,7 @@ import java.util.List;
 public final class Help {
     private static final List<String> KEYS = List.of("automessage.help-title", "automessage.help-create",
             "automessage.help-editor", "automessage.help-view", "automessage.help-delete",
-            "automessage.help-config", "automessage.help-debug", "automessage.help-reload");
+            "automessage.help-config", "automessage.help-debug", "automessage.help-reload", "automessage.help-convert");
     private final LanguageManager language;
 
     public Help(LanguageManager language) { this.language = language; }

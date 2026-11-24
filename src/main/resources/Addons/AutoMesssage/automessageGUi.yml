@@ -1,17 +1,17 @@
 # GUI layout and button appearance. Slots are zero-based Bukkit inventory slots.
-# Button types: material, player-head, itemsadder, minecart.
-# For ItemsAdder use the custom item's ID in item-id; no namespace is needed.
+# Button types: material, player-head, minecart.
+# item-id is a numeric CustomModelData value applied to the configured material.
 
 # HeadDatabase head example: https://minecraft-heads.com/custom-heads/heads-database
 #   material: PLAYER_HEAD
 #   head-database-id: "xxxxx" (e.g. "75167")
 #   fallback-material: REDSTONE
-# ItemsAdder example (replace my_gui_button with the item's ID from your pack):
+# Custom model example:
 # button:
 #   back:
 #     slot: 49
-#     type: itemsadder
-#     item-id: "my_gui_button"
+#     material: PAPER
+#     item-id: 4300208
 #     fallback-material: ARROW
 overview:
   rows: 6
@@ -21,8 +21,18 @@ overview:
     status-slots: [9, 10, 11, 12, 13, 14, 15, 16, 17, 27, 28, 29, 30, 31, 32, 33, 34, 35]
   status:
     # Status item is shown directly below each message item.
-    material_on: GREEN_DYE
-    material_off: RED_DYE
+    on:
+      type: material
+      material: GREEN_DYE
+      head-database-id: ''
+      item-id: ''
+      fallback-material: GREEN_DYE
+    off:
+      type: material
+      material: RED_DYE
+      head-database-id: ''
+      item-id: ''
+      fallback-material: RED_DYE
 
 config:
   interval-slot: 11
@@ -38,34 +48,71 @@ button:
     material: PLAYER_HEAD
     head-database-id: '94736'
     fallback-material: ARROW
+    item-id: ''
   back:
     slot: 49
     material: PLAYER_HEAD
     head-database-id: '94681'
     fallback-material: ARROW
+    item-id: ''
   close:
     slot: 49
     material: PLAYER_HEAD
     head-database-id: '34744'
     fallback-material: BARRIER
+    item-id: ''
   next-page:
     slot: 53
     material: PLAYER_HEAD
     head-database-id: '94735'
     fallback-material: ARROW
+    item-id: ''
 
 detail:
   rows: 4
   button:
     item:
       slot: 10
+      type: material
       material: CHEST
+      head-database-id: ''
+      item-id: ''
+      fallback-material: CHEST
     edit:
       slot: 13
+      type: material
       material: CRAFTING_TABLE
+      head-database-id: ''
+      item-id: ''
+      fallback-material: CRAFTING_TABLE
     delete:
       slot: 16
+      type: material
+      head-database-id: ''
+      item-id: ''
       fallback-material: BARRIER
+    servers:
+      slot: 22
+      type: material
+      material: COMPASS
+      head-database-id: ''
+      item-id: ''
+      fallback-material: COMPASS
+
+servers:
+  rows: 4
+  on:
+    type: material
+    material: LIME_DYE
+    head-database-id: ''
+    item-id: ''
+    fallback-material: LIME_DYE
+  off:
+    type: material
+    material: GRAY_DYE
+    head-database-id: ''
+    item-id: ''
+    fallback-material: GRAY_DYE
 
 # Detail and item-change use Back in the last row; the overview uses Close.
 # item-slot is zero-based and must be in the rows above the button bar.

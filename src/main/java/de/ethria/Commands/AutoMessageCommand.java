@@ -26,6 +26,7 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
     private final Delete deleteSubcommand;
     private final de.ethria.Commands.AutoMessageSubcommands.Help help;
     private final de.ethria.Commands.AutoMessageSubcommands.Config configGui;
+    private final de.ethria.Commands.AutoMessageSubcommands.Convert convert;
 
     public AutoMessageCommand(Main plugin, DatabaseManager database, LanguageManager language) {
         this.plugin = plugin;
@@ -37,6 +38,7 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
         this.deleteSubcommand = new Delete(plugin, database, language);
         this.configGui = new de.ethria.Commands.AutoMessageSubcommands.Config(plugin, language,
                 de.ethria.Config.YamlDefaults.loadAndUpdate(plugin, "Addons/AutoMesssage/automessageGUi.yml", new java.io.File(plugin.getDataFolder(), "Addons/AutoMesssage/automessageGUi.yml")));
+        this.convert = new de.ethria.Commands.AutoMessageSubcommands.Convert(database, language);
     }
 
     @Override
@@ -73,6 +75,11 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("convert")) {
+            if (args.length == 3) convert.execute(sender, args[1], args[2]);
+            else help.execute(sender);
+            return true;
+        }
         if (args.length > 0 && args[0].equalsIgnoreCase("delete")) {
             if (!sender.hasPermission("ethriaaddons.command.automessage.delete")) sender.sendMessage(language.message("automessage.no-permission"));
             else deleteSubcommand.execute(sender, args);
@@ -102,20 +109,24 @@ public final class AutoMessageCommand implements CommandExecutor, TabCompleter {
 
     public Editor editor() { return editor; }
     public de.ethria.Commands.AutoMessageSubcommands.Config configGui() { return configGui; }
+    public void reloadGuiConfigs() { editor.reloadGuiConfig(); configGui.reloadGuiConfig(); }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             String prefix = args[0].toLowerCase(Locale.ROOT);
-            return List.of("create", "editor", "view", "delete", "config", "reload", "debug", "help").stream()
+            return List.of("create", "editor", "view", "delete", "config", "reload", "debug", "convert", "help").stream()
                     .filter(value -> value.startsWith(prefix))
                     .filter(value -> !value.equals("create") || sender.hasPermission("ethriaaddons.command.automessage.create"))
                     .filter(value -> !value.equals("reload") || sender.hasPermission("ethriaaddons.command.automessage.reload"))
                     .filter(value -> !value.equals("delete") || sender.hasPermission("ethriaaddons.command.automessage.delete"))
                     .filter(value -> !value.equals("config") || sender.hasPermission("ethriaaddons.command.automessage.config"))
                     .filter(value -> !value.equals("debug") || sender.hasPermission("ethriaaddons.command.automessage.debug"))
+                    .filter(value -> !value.equals("convert") || sender.hasPermission("ethriaaddons.command.automessage.convert"))
                     .toList();
         }
+        if (args.length == 2 && args[0].equalsIgnoreCase("convert") && sender.hasPermission("ethriaaddons.command.automessage.convert")) return convert.complete(args[1]);
+        if (args.length == 3 && args[0].equalsIgnoreCase("convert") && sender.hasPermission("ethriaaddons.command.automessage.convert")) return convert.complete(args[2]).stream().filter(type -> !type.equalsIgnoreCase(args[1])).toList();
         if (args.length >= 2 && args[0].equalsIgnoreCase("view") && sender.hasPermission("ethriaaddons.command.automessage.view")) {
             String prefix = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)).toLowerCase(Locale.ROOT);
             try {

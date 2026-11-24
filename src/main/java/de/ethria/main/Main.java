@@ -47,6 +47,8 @@ public final class Main extends JavaPlugin {
     private AutoMessageScheduler autoMessageScheduler;
     private LanguageManager languageManager;
     private Editor holoPanelEditor;
+    private HoloPanelCommand holoPanelCommand;
+    private AutoMessageCommand autoMessageCommand;
     private File autoMessageConfigFile;
     private File autoMessageGuiConfigFile;
     private YamlConfiguration autoMessageConfig;
@@ -77,9 +79,22 @@ public final class Main extends JavaPlugin {
         getCommand("ethriaaddon").setTabCompleter((org.bukkit.command.TabCompleter) getCommand("ethriaaddon").getExecutor());
         try {
             databaseManager = new DatabaseManager(this);
-            databaseManager.initialize();
+            try {
+                databaseManager.initializeHoloPanel();
+            } catch (SQLException exception) {
+                getLogger().log(Level.SEVERE, "Could not initialize the HoloPanel database.", exception);
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
+            try {
+                databaseManager.initializeAutoMessage();
+            } catch (SQLException exception) {
+                getLogger().log(Level.SEVERE, "Could not initialize the AutoMessage database. Check Addons/AutoMesssage/automessage.yml (database.mysql.database).", exception);
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
         } catch (SQLException | IllegalArgumentException exception) {
-            getLogger().log(Level.SEVERE, "Could not initialize the HoloPanel database.", exception);
+            getLogger().log(Level.SEVERE, "Could not initialize database configuration.", exception);
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -101,7 +116,6 @@ public final class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ClickListener(DependPlotSquared, DependPlotSquaredWorld, FDragonEgg, FDragonEggMaterial, FDragonEggID, FDragonEggName, FDragonEggLore), this);
         updateLocateBiomeCommand();
         getCommand("locatebiome").setTabCompleter(new LocateBiomeTabCompleter());
-        HoloPanelCommand holoPanelCommand;
         if (HoloPanelEnabled) {
             HoloPanelEngine holoPanelEngine = new HoloPanelEngine(this, databaseManager);
             try {
@@ -117,7 +131,7 @@ public final class Main extends JavaPlugin {
         }
         getCommand("holopanel").setExecutor(holoPanelCommand);
         getCommand("holopanel").setTabCompleter(holoPanelCommand);
-        AutoMessageCommand autoMessageCommand = new AutoMessageCommand(this, databaseManager, languageManager);
+        autoMessageCommand = new AutoMessageCommand(this, databaseManager, languageManager);
         getServer().getPluginManager().registerEvents(autoMessageCommand.configGui(), this);
         getServer().getPluginManager().registerEvents(autoMessageCommand.editor(), this);
         if (getConfig().getBoolean("AutoMessage", true)) {
@@ -153,6 +167,7 @@ public final class Main extends JavaPlugin {
             updateLocateBiomeCommand();
             if (databaseManager != null) databaseManager.reloadConfigDefaults();
             if (holoPanelEditor != null) holoPanelEditor.reloadGuiConfig();
+            if (autoMessageCommand != null) autoMessageCommand.reloadGuiConfigs();
             Prefix = ChatColor.translateAlternateColorCodes('&', getConfig().getString("Prefix", "&9&lEthria &8≫ "));
         } catch (RuntimeException exception) {
             getConfig().set("Prefix", previousConfig.getString("Prefix", "&9&lEthria &8≫ "));
@@ -165,6 +180,7 @@ public final class Main extends JavaPlugin {
     public void reloadAutoMessageConfig() {
         autoMessageConfig = YamlDefaults.loadAndUpdate(this, "Addons/AutoMesssage/automessage.yml", autoMessageConfigFile);
         YamlDefaults.loadAndUpdate(this, "Addons/AutoMesssage/automessageGUi.yml", autoMessageGuiConfigFile);
+        if (autoMessageCommand != null) autoMessageCommand.reloadGuiConfigs();
         if (databaseManager != null) databaseManager.reloadConfigDefaults();
         if (autoMessageScheduler != null) autoMessageScheduler.restart();
     }
