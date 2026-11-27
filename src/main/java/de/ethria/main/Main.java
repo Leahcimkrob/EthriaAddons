@@ -8,6 +8,7 @@ import de.ethria.Commands.LocateBiomeCommand;
 import de.ethria.Commands.LocateBiomeTabCompleter;
 import de.ethria.Commands.HoloPanelCommand;
 import de.ethria.Commands.AutoMessageCommand;
+import de.ethria.Commands.ViewNbtCommand;
 import de.ethria.Scheduler.AutoMessageScheduler;
 import de.ethria.Database.DatabaseManager;
 import de.ethria.Language.LanguageManager;
@@ -49,6 +50,7 @@ public final class Main extends JavaPlugin {
     private Editor holoPanelEditor;
     private HoloPanelCommand holoPanelCommand;
     private AutoMessageCommand autoMessageCommand;
+    private ViewNbtCommand viewNbtCommand;
     private File autoMessageConfigFile;
     private File autoMessageGuiConfigFile;
     private YamlConfiguration autoMessageConfig;
@@ -140,6 +142,10 @@ public final class Main extends JavaPlugin {
         }
         getCommand("automessage").setExecutor(autoMessageCommand);
         getCommand("automessage").setTabCompleter(autoMessageCommand);
+        viewNbtCommand = new ViewNbtCommand(this, languageManager);
+        getServer().getPluginManager().registerEvents(viewNbtCommand, this);
+        getCommand("viewnbt").setExecutor(viewNbtCommand);
+        getCommand("viewnbt").setTabCompleter(viewNbtCommand);
         DragonEggCutterCommand dragonEggCutterCommand = new DragonEggCutterCommand(
                 FDragonEggKey, FDragonEggMaterial, FDragonEggID, FDragonEggName, FDragonEggLore, languageManager);
         getCommand("dragoneggcutter").setExecutor(dragonEggCutterCommand);
@@ -168,6 +174,7 @@ public final class Main extends JavaPlugin {
             if (databaseManager != null) databaseManager.reloadConfigDefaults();
             if (holoPanelEditor != null) holoPanelEditor.reloadGuiConfig();
             if (autoMessageCommand != null) autoMessageCommand.reloadGuiConfigs();
+            if (viewNbtCommand != null) viewNbtCommand.reloadGuiConfig();
             Prefix = ChatColor.translateAlternateColorCodes('&', getConfig().getString("Prefix", "&9&lEthria &8≫ "));
         } catch (RuntimeException exception) {
             getConfig().set("Prefix", previousConfig.getString("Prefix", "&9&lEthria &8≫ "));

@@ -3,6 +3,25 @@ command:
   player-only: "<red>Dieser Befehl kann nur von Spielern ausgeführt werden."
   usage: "<yellow>Verwendung: /<label> create <Name>"
   created: "<green>Der Name <yellow><name></yellow> wurde gespeichert. Du kannst ihn im HoloPanel-Editor bearbeiten."
+
+viewnbt:
+  player-only: "<red>Dieser Befehl kann nur von Spielern ausgeführt werden."
+  no-item: "<red>Halte ein Item in der Haupthand."
+  title: "<gold>Item-Daten"
+  compare-title: "<gold>Item-Unterschiede"
+  compare-gui-title: "<gold>Items zum Vergleichen"
+  compare-first: "<yellow>Erstes Item hier ablegen"
+  compare-second: "<yellow>Zweites Item hier ablegen"
+  compare-button: "<green>Vergleichen"
+  compare-missing: "<red>Lege zuerst beide Items in die markierten Slots."
+  data-label: "Vollständige serialisierte Item-Daten"
+  copy: "Kopieren"
+  copied: "<green>NBT- bzw. Vergleichsdaten wurden in die Zwischenablage eingefügt."
+  close: "Schließen"
+  compare-usage: "<red>Verwendung: /viewnbt compare <Inventar-Slot> (Slot 0–40)"
+  compare-identical: "<green>Die beiden Items sind identisch."
+  first-item: "Hand"
+  second-item: "Vergleichs-Item"
   create-failed: "<red>Das HoloPanel konnte nicht erstellt werden. Details stehen in der Konsole."
 
 reload:

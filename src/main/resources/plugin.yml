@@ -27,6 +27,10 @@ permissions:
       ethriaaddons.command.locatebiome.*: true
       ethriaaddons.command.holopanel.*: true
       ethriaaddons.command.dragoneggcutter.*: true
+      ethriaaddons.command.viewnbt: true
+  ethriaaddons.command.viewnbt:
+    description: Zeigt die Itemdaten des gehaltenen Items an
+    default: op
   ethriaaddons.command.automessage.*:
     default: op
     children:
@@ -124,6 +128,8 @@ permissions:
     default: false
 
 commands:
+  viewnbt:
+    description: Zeigt die vollständigen Daten des gehaltenen Items
   ethriaaddon:
     description: Lädt Konfiguration und Sprachdatei neu
     usage: /ethriaaddon reload

@@ -1,0 +1,18 @@
+# Vergleichs-GUI für /viewnbt compare. Slots sind nullbasiert.
+# item-id ist eine numerische CustomModelData-ID. HeadDatabase ist optional.
+compare:
+  rows: 3
+  first-slot: 11
+  second-slot: 15
+  button:
+    slot: 13
+    material: ANVIL
+    head-database-id: ''
+    item-id: ''
+    fallback-material: ANVIL
+
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  head-database-id: ''
+  item-id: ''
+  fallback-material: GRAY_STAINED_GLASS_PANE
