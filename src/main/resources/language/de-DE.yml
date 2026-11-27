@@ -22,6 +22,8 @@ viewnbt:
   compare-identical: "<green>Die beiden Items sind identisch."
   first-item: "Hand"
   second-item: "Vergleichs-Item"
+
+command:
   create-failed: "<red>Das HoloPanel konnte nicht erstellt werden. Details stehen in der Konsole."
 
 reload:

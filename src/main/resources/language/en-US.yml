@@ -5,6 +5,25 @@ command:
   created: "<green>The name <yellow><name></yellow> has been saved. You can edit it in the HoloPanel editor."
   create-failed: "<red>The HoloPanel could not be created. Check the console for details."
 
+viewnbt:
+  player-only: "<red>This command can only be used by players."
+  no-item: "<red>Hold an item in your main hand."
+  title: "<gold>Item Data"
+  compare-title: "<gold>Item Differences"
+  compare-gui-title: "<gold>Items to Compare"
+  compare-first: "<yellow>Place the first item here"
+  compare-second: "<yellow>Place the second item here"
+  compare-button: "<green>Compare"
+  compare-missing: "<red>Place both items in the marked slots first."
+  data-label: "Complete serialized item data"
+  copy: "Copy"
+  copied: "<green>NBT or comparison data was copied to your clipboard."
+  close: "Close"
+  compare-usage: "<red>Usage: /viewnbt compare <inventory-slot> (slot 0–40)"
+  compare-identical: "<green>The two items are identical."
+  first-item: "Original"
+  second-item: "Modified"
+
 reload:
   usage: "<yellow>Usage: /<label> reload"
   success: "<green>Configuration and language file reloaded."
