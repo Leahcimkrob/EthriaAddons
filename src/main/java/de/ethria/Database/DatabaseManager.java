@@ -460,7 +460,11 @@ public final class DatabaseManager {
         boolean exists;
         try (ResultSet columns = connection.getMetaData().getColumns(null, null, "automessages", "active")) { exists = columns.next(); }
         if (!exists) return;
-        try (Statement statement = connection.createStatement()) { statement.execute("ALTER TABLE automessages DROP COLUMN active"); }
+        // Preserve disabled messages as disabled server assignments when migrating the old global flag.
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DELETE FROM automessage_servers WHERE EXISTS (SELECT 1 FROM automessages a WHERE a.id=automessage_servers.automessage_id AND (a.active=FALSE OR a.active=0))");
+            statement.execute("ALTER TABLE automessages DROP COLUMN active");
+        }
         catch (SQLException exception) { throw new SQLException("Could not remove obsolete automessages.active column.", exception); }
     }
 
