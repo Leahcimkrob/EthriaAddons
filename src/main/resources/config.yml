@@ -10,6 +10,7 @@ DragonEgg: true
 LocateBiome: true
 HoloPanel: true
 AutoMessage: true
+ViewNBT: true
 
 # PlotSquared-Prüfung für den Dragon-Egg-Schneider.
 PlotSquaredCheck: true
